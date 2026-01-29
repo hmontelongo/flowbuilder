@@ -49,6 +49,15 @@ const props = defineProps({
         type: Array,
         required: true,
     },
+    availableChannels: {
+        type: Array,
+        default: () => [
+            // Default mock data for development
+            { id: 'ch-1', type: 'whatsapp', name: 'Canal Principal', phone: '+52 123 456 7890' },
+            { id: 'ch-2', type: 'whatsapp', name: 'Canal Ventas', phone: '+52 123 456 7891' },
+            { id: 'ch-3', type: 'webchat', name: 'Web Chat', phone: null },
+        ],
+    },
 });
 
 // Vue Flow composable for zoom control
@@ -254,6 +263,9 @@ const connectedNodeIds = computed(() => {
 // Provide edges to child components for connection detection
 provide('flowEdges', edges);
 provide('connectedNodeIds', connectedNodeIds);
+
+// Provide available channels for CanalNode
+provide('availableChannels', props.availableChannels);
 
 // Node actions for delete and duplicate
 const deleteNode = (nodeId) => {

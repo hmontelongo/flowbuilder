@@ -70,7 +70,7 @@ const props = defineProps({
     },
     borderRadius: {
         type: String,
-        default: '8px 8px 4px 8px',
+        default: '8px',
     },
     connectorOffset: {
         type: Number,
@@ -92,7 +92,7 @@ const borderColor = computed(() => {
 });
 
 const backgroundColor = computed(() => {
-    return props.state.mode === 'readonly' ? 'var(--color-fb-node-bg-readonly)' : 'var(--color-fb-node-bg-normal)';
+    return props.state.mode === 'readonly' ? 'var(--color-fb-neutral-50)' : 'var(--color-fb-node-bg-normal)';
 });
 
 const cardStyles = computed(() => ({

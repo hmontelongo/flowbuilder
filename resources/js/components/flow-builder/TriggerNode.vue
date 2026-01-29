@@ -15,7 +15,7 @@
 <script setup>
 import { ref } from 'vue';
 import BaseNode from './BaseNode.vue';
-import NodeDropdown from './NodeDropdown.vue';
+import { NodeDropdown } from './shared';
 import { TriggerIcon } from './icons';
 
 const selectedAction = ref('');
@@ -46,12 +46,14 @@ const dropdownSections = [
 
 const nodeConfig = {
     header: {
-        iconColor: '#34d1bf',
+        iconColor: 'var(--color-fb-node-trigger)',
         icon: TriggerIcon,
-    },
-    card: {
-        padding: '16px 8px',
-        borderRadius: '8px 8px 4px 8px',
+        tooltip: {
+            title: 'Disparador',
+            description: 'Define qué acción o evento iniciará este flujo. Puede ser un mensaje, palabra clave o evento externo.',
+            linkText: 'Leer más',
+            linkUrl: '#',
+        },
     },
     connectors: {
         input: true,

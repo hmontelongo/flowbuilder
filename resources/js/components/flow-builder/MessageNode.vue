@@ -88,12 +88,14 @@ import { MessageIcon } from './icons';
 
 const nodeConfig = {
     header: {
-        iconColor: '#3454d1',
+        iconColor: 'var(--color-fb-node-message)',
         icon: MessageIcon,
-    },
-    card: {
-        padding: '8px',
-        borderRadius: '8px',
+        tooltip: {
+            title: 'Mensaje',
+            description: 'Envía un mensaje de texto, imagen, video, documento u otro tipo de contenido al usuario.',
+            linkText: 'Leer más',
+            linkUrl: '#',
+        },
     },
     connectors: {
         input: true,

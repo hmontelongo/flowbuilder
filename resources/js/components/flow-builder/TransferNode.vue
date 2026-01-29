@@ -15,19 +15,21 @@
 <script setup>
 import { ref } from 'vue';
 import BaseNode from './BaseNode.vue';
-import NodeInput from './NodeInput.vue';
+import { NodeInput } from './shared';
 import { TransferIcon } from './icons';
 
 const chatCenterValue = ref('');
 
 const nodeConfig = {
     header: {
-        iconColor: '#d1345b',
+        iconColor: 'var(--color-fb-node-transfer)',
         icon: TransferIcon,
-    },
-    card: {
-        padding: '16px 8px',
-        borderRadius: '8px',
+        tooltip: {
+            title: 'Transferir',
+            description: 'Transfiere la conversación a un agente humano o a otro chat center para atención personalizada.',
+            linkText: 'Leer más',
+            linkUrl: '#',
+        },
     },
     connectors: {
         input: true,

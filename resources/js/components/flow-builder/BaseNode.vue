@@ -2,7 +2,16 @@
     <NodeWrapper @delete="onDelete" @duplicate="onDuplicate">
         <div class="base-node flex flex-col items-center gap-2">
             <!-- Header -->
-            <NodeHeader :label="node.data?.label ?? 'Node'" :icon-color="config.header.iconColor">
+            <NodeHeader
+                :label="node.data?.label ?? 'Node'"
+                :icon-color="config.header.iconColor"
+                :state="nodeState"
+                :show-delete="true"
+                :show-duplicate="true"
+                :tooltip="config.header.tooltip"
+                @delete="onDelete"
+                @duplicate="onDuplicate"
+            >
                 <template #icon>
                     <slot name="icon">
                         <component
@@ -17,8 +26,8 @@
             <!-- Card with connectors -->
             <NodeCard
                 :state="nodeState"
-                :padding="config.card?.padding ?? '16px 8px'"
-                :border-radius="config.card?.borderRadius ?? '8px 8px 4px 8px'"
+                :padding="config.card?.padding ?? '8px'"
+                :border-radius="config.card?.borderRadius ?? '8px'"
                 :width="config.card?.width ?? '300px'"
             >
                 <template v-if="hasInputConnector" #input-connector>
@@ -62,6 +71,8 @@ const props = defineProps({
         validator: (val) => val.header?.iconColor !== undefined && val.connectors !== undefined,
     },
 });
+
+// Delete is now handled directly in header via onDelete
 
 // Vue Flow's useNode provides id, node object, and connected edges
 const { id, node, connectedEdges } = useNode();

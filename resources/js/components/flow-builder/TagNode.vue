@@ -6,28 +6,17 @@
 
         <div class="flex flex-col gap-1 w-full">
             <!-- Tag name input -->
-            <div class="node-input flex items-center w-full">
-                <input
-                    v-model="tagName"
-                    type="text"
-                    placeholder="Asigna un nombre, ej: respuesta_menu"
-                    class="node-text-xs flex-1 outline-none bg-transparent min-w-0"
-                    @click.stop
-                    @mousedown.stop
-                />
-            </div>
+            <NodeInput
+                v-model="tagName"
+                placeholder="Asigna un nombre, ej: respuesta_menu"
+            />
 
             <!-- Scope dropdown -->
-            <div
-                class="node-input node-input-dark flex items-center justify-between w-full cursor-pointer"
-                @click.stop="toggleScopeDropdown"
-                @mousedown.stop
-            >
-                <span class="node-text-xs" style="color: var(--color-fb-text-dark);">{{ selectedScope }}</span>
-                <svg class="w-4 h-4" viewBox="0 0 10 5.7" fill="var(--color-fb-icon)">
-                    <path d="M5 5.7L0 0.7L0.7 0L5 4.3L9.3 0L10 0.7L5 5.7Z"/>
-                </svg>
-            </div>
+            <NodeDropdown
+                v-model="selectedScope"
+                placeholder="Selecciona el alcance"
+                :sections="scopeSections"
+            />
         </div>
     </BaseNode>
 </template>
@@ -35,24 +24,32 @@
 <script setup>
 import { ref } from 'vue';
 import BaseNode from './BaseNode.vue';
+import { NodeInput, NodeDropdown } from './shared';
 import { TagIcon } from './icons';
 
 const tagName = ref('');
-const selectedScope = ref('Usar solo en este chatbot');
-const showScopeDropdown = ref(false);
+const selectedScope = ref('this_chatbot');
 
-const toggleScopeDropdown = () => {
-    showScopeDropdown.value = !showScopeDropdown.value;
-};
+const scopeSections = [
+    {
+        label: 'Alcance',
+        options: [
+            { value: 'this_chatbot', label: 'Usar solo en este chatbot' },
+            { value: 'all_chatbots', label: 'Usar en todos los chatbots' },
+        ],
+    },
+];
 
 const nodeConfig = {
     header: {
-        iconColor: '#ff773d',
+        iconColor: 'var(--color-fb-node-tag)',
         icon: TagIcon,
-    },
-    card: {
-        padding: '8px',
-        borderRadius: '8px',
+        tooltip: {
+            title: 'Etiqueta',
+            description: 'Asigna una etiqueta a la conversación para clasificarla y facilitar su seguimiento posterior.',
+            linkText: 'Leer más',
+            linkUrl: '#',
+        },
     },
     connectors: {
         input: true,
@@ -60,9 +57,3 @@ const nodeConfig = {
     },
 };
 </script>
-
-<style scoped>
-input::placeholder {
-    color: var(--color-fb-input-placeholder);
-}
-</style>

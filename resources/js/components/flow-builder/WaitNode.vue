@@ -80,12 +80,14 @@ const fallbackMessage = ref('');
 
 const nodeConfig = {
     header: {
-        iconColor: '#a60385',
+        iconColor: 'var(--color-fb-node-wait)',
         icon: WaitIcon,
-    },
-    card: {
-        padding: '16px 8px 8px 8px',
-        borderRadius: '8px 8px 4px 8px',
+        tooltip: {
+            title: 'Espera',
+            description: 'Pausa el flujo hasta recibir una respuesta del usuario o hasta que expire el tiempo definido.',
+            linkText: 'Leer más',
+            linkUrl: '#',
+        },
     },
     connectors: {
         input: true,

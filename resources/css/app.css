@@ -6,7 +6,35 @@
 @theme {
     --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 
-    /* Flow Builder Design Tokens */
+    /* ==========================================================================
+       Figma Design System - Neutral Scale
+       ========================================================================== */
+    --color-fb-neutral-0: #ffffff;
+    --color-fb-neutral-50: #f9fafb;
+    --color-fb-neutral-100: #f3f4f6;
+    --color-fb-neutral-200: #e5e7eb;
+    --color-fb-neutral-300: #d1d5dc;
+    --color-fb-neutral-500: #7e7e7e;
+    --color-fb-neutral-600: #404040;
+    --color-fb-neutral-700: #364153;
+    --color-fb-neutral-800: #1e2939;
+
+    /* ==========================================================================
+       Figma Design System - Spacing Scale (4px grid)
+       ========================================================================== */
+    --fb-space-xs: 4px;
+    --fb-space-s: 8px;
+    --fb-space-m: 16px;
+    --fb-space-l: 24px;
+
+    /* ==========================================================================
+       Figma Design System - Shadows
+       ========================================================================== */
+    --fb-shadow-dropdown: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+    /* ==========================================================================
+       Flow Builder Design Tokens (Semantic)
+       ========================================================================== */
     --color-fb-canvas: #f4f6f7;
     --color-fb-button-default: #ffffff;
     --color-fb-button-active: #e5e7eb;
@@ -35,7 +63,7 @@
     --color-fb-node-border-warning: #ff8657;
     --color-fb-node-border-error: #ff4e42;
     --color-fb-node-bg-normal: #ffffff;
-    --color-fb-node-bg-readonly: #f9fafb;
+    /* Note: Readonly background uses --color-fb-neutral-50 (#f9fafb) */
 
     /* Node Type Colors */
     --color-fb-node-canal: #fec601;
@@ -45,9 +73,13 @@
     --color-fb-node-wait: #a60385;
     --color-fb-node-tag: #ff773d;
 
+    /* Channel Type Colors */
+    --color-fb-channel-whatsapp: #25D366;
+    --color-fb-channel-webchat: #3866ff;
+
     /* Input Styling */
-    --color-fb-input-border: #99a1af;
-    --color-fb-input-border-dark: #6a7282;
+    --color-fb-input-border: #6a7282;
+    --color-fb-input-border-focus: #3866ff;
     --color-fb-input-text: #1e2939;
     --color-fb-input-placeholder: #99a1af;
     --color-fb-input-bg: #f8f8f8;
@@ -110,6 +142,14 @@
     color: var(--color-fb-input-placeholder);
 }
 
+.node-text-error {
+    color: var(--color-fb-node-border-error);
+}
+
+.node-text-warning {
+    color: var(--color-fb-node-border-warning);
+}
+
 /* Node Inputs */
 .node-input {
     border: 1px solid var(--color-fb-input-border);
@@ -118,8 +158,9 @@
     background: white;
 }
 
-.node-input-dark {
-    border-color: var(--color-fb-input-border-dark);
+.node-input-focus {
+    border-color: var(--color-fb-input-border-focus);
+    box-shadow: 0px 0px 2px 0px rgba(34, 85, 255, 0.2);
 }
 
 .node-input-message {
@@ -251,7 +292,7 @@
 
 /* Dropdown Menu Container */
 .node-dropdown-menu {
-    background-color: var(--color-fb-node-bg-readonly);
+    background-color: var(--color-fb-neutral-50);
     border-radius: 8px;
     padding: 4px 8px 16px 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
