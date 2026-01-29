@@ -6,6 +6,7 @@
 <div class="absolute top-[-1px] left-[-1px] w-full flex items-center justify-between bg-white px-[16px] py-[8px]">
     {{-- Left section --}}
     <div class="flex items-center shrink-0">
+        {{-- TODO: Wire up back navigation --}}
         {{-- Back button --}}
         <div class="flex items-center overflow-clip rounded-[8px]">
             <div class="flex gap-[8px] h-[32px] items-center justify-center px-[8px] py-[4px] rounded-[8px] cursor-pointer hover:bg-[#f3f4f6]">
@@ -29,6 +30,7 @@
             </div>
         </div>
 
+        {{-- TODO: Wire up undo/redo when implementing history --}}
         {{-- Undo button --}}
         <div class="flex items-center overflow-clip rounded-[8px]">
             <div class="flex gap-[8px] h-[32px] items-center justify-center px-[8px] py-[4px] rounded-[8px] cursor-pointer hover:bg-[#f3f4f6]">
@@ -53,6 +55,7 @@
     </div>
 
     {{-- Right section --}}
+    {{-- TODO: Wire up search, settings, and share actions --}}
     <div class="flex gap-[4px] items-center shrink-0">
         {{-- Search button --}}
         <div class="bg-white flex items-center overflow-clip rounded-[8px]">
@@ -68,7 +71,7 @@
         {{-- Run button group --}}
         <div class="bg-[#efefef] flex items-center px-[4px]">
             <p class="font-medium leading-[16px] text-[12px] text-[#1e2939]" style="font-family: 'Inter', sans-serif;">
-                Run
+                Ejecutar
             </p>
             <div class="flex items-center overflow-clip rounded-[8px]">
                 <div class="flex gap-[8px] h-[32px] items-center justify-center px-[8px] py-[4px] rounded-[8px] cursor-pointer hover:bg-[#e5e5e5]">

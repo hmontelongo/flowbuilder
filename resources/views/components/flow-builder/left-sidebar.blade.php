@@ -39,6 +39,7 @@ $bottomTools = [
     </nav>
 
     {{-- Bottom tools --}}
+    {{-- TODO: Add wire:click handlers for profile, settings, and panel toggle --}}
     <nav class="flex flex-col items-center gap-1">
         @foreach($bottomTools as $tool)
             <x-flow-builder.sidebar-button
