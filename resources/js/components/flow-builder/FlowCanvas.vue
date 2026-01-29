@@ -38,6 +38,7 @@ import MessageNode from './MessageNode.vue';
 import TransferNode from './TransferNode.vue';
 import WaitNode from './WaitNode.vue';
 import TagNode from './TagNode.vue';
+import PlaceholderNode from './PlaceholderNode.vue';
 
 const props = defineProps({
     initialNodes: {
@@ -190,6 +191,19 @@ const nodeTypes = {
     transfer: markRaw(TransferNode),
     wait: markRaw(WaitNode),
     tag: markRaw(TagNode),
+    // Placeholder nodes (not yet designed)
+    menu: markRaw(PlaceholderNode),
+    api: markRaw(PlaceholderNode),
+    ai: markRaw(PlaceholderNode),
+    flag: markRaw(PlaceholderNode),
+    knowledge: markRaw(PlaceholderNode),
+    condition: markRaw(PlaceholderNode),
+    timer: markRaw(PlaceholderNode),
+    repeat: markRaw(PlaceholderNode),
+    reset: markRaw(PlaceholderNode),
+    variable: markRaw(PlaceholderNode),
+    events: markRaw(PlaceholderNode),
+    data: markRaw(PlaceholderNode),
 };
 
 // Default edge styling - bezier curve with selection support
