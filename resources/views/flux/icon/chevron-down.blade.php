@@ -1,0 +1,5 @@
+@props(['variant' => 'micro'])
+
+<svg {{ $attributes->class('shrink-0 size-4') }} viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M5 5.7L0 0.7L0.7 0L5 4.3L9.3 0L10 0.7L5 5.7Z" fill="currentColor"/>
+</svg>
