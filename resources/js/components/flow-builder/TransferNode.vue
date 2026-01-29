@@ -1,12 +1,12 @@
 <template>
     <BaseNode :config="nodeConfig">
         <template #icon>
-            <CanalIcon />
+            <TransferIcon />
         </template>
 
         <NodeInput
-            v-model="searchValue"
-            placeholder="Buscar un canal"
+            v-model="chatCenterValue"
+            placeholder="Elige el chat center a transferir"
             icon="search"
         />
     </BaseNode>
@@ -16,21 +16,21 @@
 import { ref } from 'vue';
 import BaseNode from './BaseNode.vue';
 import NodeInput from './NodeInput.vue';
-import { CanalIcon } from './icons';
+import { TransferIcon } from './icons';
 
-const searchValue = ref('');
+const chatCenterValue = ref('');
 
 const nodeConfig = {
     header: {
-        iconColor: '#fec601',
-        icon: CanalIcon,
+        iconColor: '#d1345b',
+        icon: TransferIcon,
     },
     card: {
-        padding: '8px',
+        padding: '16px 8px',
         borderRadius: '8px',
     },
     connectors: {
-        input: false,
+        input: true,
         output: true,
     },
 };

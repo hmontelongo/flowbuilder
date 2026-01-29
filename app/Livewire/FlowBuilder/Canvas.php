@@ -16,34 +16,20 @@ class Canvas extends Component
      */
     public array $edges = [];
 
+    public string $activeTool = 'flows';
+
+    public string $flowName = 'Nombre del chatbot';
+
+    public function setActiveTool(string $toolId): void
+    {
+        $this->activeTool = $toolId;
+    }
+
     public function mount(): void
     {
-        // Initial nodes - spaced 150px apart (256px card width + 150px gap)
-        $this->nodes = [
-            [
-                'id' => 'node-1',
-                'type' => 'canal',
-                'name' => 'Canal',
-                'x' => 100,
-                'y' => 150,
-            ],
-            [
-                'id' => 'node-2',
-                'type' => 'trigger',
-                'name' => 'Nombre de bloque',
-                'x' => 500,
-                'y' => 150,
-            ],
-        ];
-
-        // Initial edge connecting them
-        $this->edges = [
-            [
-                'id' => 'edge-1',
-                'source' => 'node-1',
-                'target' => 'node-2',
-            ],
-        ];
+        // Start with empty canvas - blocks will be added via the palette
+        $this->nodes = [];
+        $this->edges = [];
     }
 
     public function updateNodePosition(string $nodeId, int $x, int $y): void
@@ -71,6 +57,28 @@ class Canvas extends Component
         $this->edges = array_values(
             array_filter($this->edges, fn ($edge) => $edge['id'] !== $edgeId)
         );
+    }
+
+    public function removeNode(string $nodeId): void
+    {
+        $this->nodes = array_values(
+            array_filter($this->nodes, fn ($node) => $node['id'] !== $nodeId)
+        );
+        // Also remove any edges connected to this node
+        $this->edges = array_values(
+            array_filter($this->edges, fn ($edge) => $edge['source'] !== $nodeId && $edge['target'] !== $nodeId)
+        );
+    }
+
+    public function addNode(string $nodeId, string $type, string $name, int $x, int $y): void
+    {
+        $this->nodes[] = [
+            'id' => $nodeId,
+            'type' => $type,
+            'name' => $name,
+            'x' => $x,
+            'y' => $y,
+        ];
     }
 
     public function render()

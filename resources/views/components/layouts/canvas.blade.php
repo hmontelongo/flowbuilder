@@ -14,8 +14,38 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @fluxAppearance
+
+    <style>
+        .flow-builder-layout {
+            display: grid;
+            grid-template-columns: var(--fb-sidebar-width) 1fr;
+            grid-template-rows: var(--fb-topnav-height) 1fr;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .flow-builder-topnav {
+            grid-column: 1 / -1;
+            grid-row: 1;
+        }
+
+        .flow-builder-sidebar {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        .flow-builder-main {
+            grid-column: 2;
+            grid-row: 2;
+            position: relative;
+            overflow: hidden;
+            background-color: #f4f6f7;
+            border: 1px solid #d1d5dc;
+            border-top-left-radius: var(--fb-border-radius);
+        }
+    </style>
 </head>
-<body class="antialiased overflow-hidden">
+<body class="antialiased overflow-hidden bg-white">
     {{ $slot }}
 
     @fluxScripts

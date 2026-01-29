@@ -4,5 +4,263 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Flow Builder Design Tokens */
+    --color-fb-canvas: #f4f6f7;
+    --color-fb-button-default: #ffffff;
+    --color-fb-button-active: #e5e7eb;
+    --color-fb-button-hover: #f3f4f6;
+    --color-fb-icon: #364153;
+    --color-fb-text: #1e2939;
+    --color-fb-text-secondary: #4a5565;
+    --color-fb-border: #e5e7eb;
+
+    /* Sizing */
+    --fb-sidebar-width: 64px;
+    --fb-topnav-height: 48px;
+    --fb-button-size: 32px;
+    --fb-border-radius: 8px;
+
+    /* Node Layout */
+    --fb-node-width: 300px;
+    --fb-node-header-width: 308px;
+    --fb-node-connector-offset: 12px;
+    --fb-node-chip-size: 24px;
+    --fb-node-chip-radius: 8px;
+
+    /* Node State Colors */
+    --color-fb-node-border-normal: #e5e7eb;
+    --color-fb-node-border-edit: #3866ff;
+    --color-fb-node-border-warning: #ff8657;
+    --color-fb-node-border-error: #ff4e42;
+    --color-fb-node-bg-normal: #ffffff;
+    --color-fb-node-bg-readonly: #f9fafb;
+
+    /* Node Type Colors */
+    --color-fb-node-canal: #fec601;
+    --color-fb-node-trigger: #34d1bf;
+    --color-fb-node-message: #3454d1;
+    --color-fb-node-transfer: #d1345b;
+    --color-fb-node-wait: #a60385;
+    --color-fb-node-tag: #ff773d;
+
+    /* Input Styling */
+    --color-fb-input-border: #99a1af;
+    --color-fb-input-border-dark: #6a7282;
+    --color-fb-input-text: #1e2939;
+    --color-fb-input-placeholder: #99a1af;
+    --color-fb-input-bg: #f8f8f8;
+
+    /* Text Colors */
+    --color-fb-text-muted: #7e7e7e;
+    --color-fb-text-label: #6a7282;
+    --color-fb-text-link: #3866ff;
+    --color-fb-text-dark: #364153;
+
+    /* Button Styling */
+    --color-fb-button-border: #d1d5dc;
+    --color-fb-button-border-dark: #030712;
+
+    /* Typography */
+    --fb-text-xs: 12px;
+    --fb-text-sm: 14px;
+    --fb-line-height-tight: 16px;
+    --fb-line-height-normal: 18px;
+}
+
+/* ==========================================================================
+   Node Component Utility Classes
+   ========================================================================== */
+
+/* Typography */
+.node-text-xs {
+    font-size: var(--fb-text-xs);
+    line-height: var(--fb-line-height-tight);
+    color: var(--color-fb-input-text);
+    letter-spacing: 0;
+}
+
+.node-text-sm {
+    font-size: var(--fb-text-sm);
+    line-height: var(--fb-line-height-normal);
+    color: var(--color-fb-input-text);
+    letter-spacing: 0;
+}
+
+.node-text-muted {
+    font-size: var(--fb-text-xs);
+    line-height: var(--fb-line-height-tight);
+    color: var(--color-fb-text-muted);
+}
+
+.node-text-label {
+    font-size: var(--fb-text-xs);
+    line-height: var(--fb-line-height-tight);
+    color: var(--color-fb-text-label);
+}
+
+.node-text-link {
+    font-size: var(--fb-text-xs);
+    line-height: var(--fb-line-height-tight);
+    color: var(--color-fb-text-link);
+}
+
+.node-text-placeholder {
+    color: var(--color-fb-input-placeholder);
+}
+
+/* Node Inputs */
+.node-input {
+    border: 1px solid var(--color-fb-input-border);
+    border-radius: 4px;
+    padding: 4px;
+    background: white;
+}
+
+.node-input-dark {
+    border-color: var(--color-fb-input-border-dark);
+}
+
+.node-input-message {
+    border: 1px solid var(--color-fb-text-dark);
+    padding: 4px;
+}
+
+/* Node Buttons */
+.node-button-icon {
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--color-fb-button-border);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+}
+
+.node-button-icon:hover {
+    background-color: var(--color-fb-button-hover);
+}
+
+.node-button-icon-delete:hover {
+    background-color: #fef2f2;
+}
+
+.node-button-add {
+    width: 24px;
+    height: 28px;
+    border: 1px solid var(--color-fb-text-muted);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.node-button-add-sm {
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--color-fb-button-border-dark);
+    border-radius: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Connector Notch Styling */
+.node-connector-notch {
+    width: 12px;
+    height: 12px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.node-connector-notch-inner {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+}
+
+.node-connector-notch-left {
+    left: 50%;
+    right: 0;
+    border: 1px solid var(--color-fb-node-border-normal);
+    border-left: none;
+    border-radius: 0 6px 6px 0;
+}
+
+.node-connector-notch-right {
+    left: 0;
+    right: 50%;
+    border: 1px solid var(--color-fb-node-border-normal);
+    border-right: none;
+    border-radius: 6px 0 0 6px;
+}
+
+.node-connector-notch-edit {
+    border-color: var(--color-fb-node-border-edit);
+}
+
+.node-connector-notch-error {
+    border-color: var(--color-fb-node-border-error);
+}
+
+/* Node Card Backgrounds */
+.node-bg-input {
+    background-color: var(--color-fb-input-bg);
+    border-radius: 4px;
+    padding: 8px;
+}
+
+/* Input Placeholder Styling */
+.node-input input::placeholder,
+.node-input-dark input::placeholder {
+    color: var(--color-fb-input-placeholder);
+}
+
+/* Dropdown Section Header */
+.node-dropdown-header {
+    font-size: 9px;
+    line-height: 14px;
+    color: var(--color-fb-text-muted);
+    text-transform: uppercase;
+    padding: 3px 8px;
+    letter-spacing: 0;
+}
+
+/* Dropdown Option */
+.node-dropdown-option {
+    font-size: var(--fb-text-xs);
+    line-height: 14px;
+    color: #404040;
+    padding: 3px 8px;
+    border-radius: 2px;
+    letter-spacing: 0;
+    cursor: pointer;
+}
+
+.node-dropdown-option:hover {
+    background-color: var(--color-fb-button-hover);
+}
+
+.node-dropdown-option.is-selected {
+    background-color: var(--color-fb-button-active);
+}
+
+/* Dropdown Menu Container */
+.node-dropdown-menu {
+    background-color: var(--color-fb-node-bg-readonly);
+    border-radius: 8px;
+    padding: 4px 8px 16px 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Dropdown Divider */
+.node-dropdown-divider {
+    background-color: var(--color-fb-button-border);
+    height: 1px;
+    border-radius: 4px;
+    margin: 4px 0;
 }
