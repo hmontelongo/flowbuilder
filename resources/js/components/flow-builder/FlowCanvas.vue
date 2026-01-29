@@ -19,6 +19,7 @@
             :multi-selection-key-code="['Shift']"
             fit-view-on-init
             :fit-view-options="{ padding: 0.8, maxZoom: 0.5 }"
+            @node-drag-start="onNodeDragStart"
             @node-drag-stop="onNodeDragStop"
             @connect="onConnect"
             @edges-change="onEdgesChange"
@@ -60,8 +61,67 @@ const props = defineProps({
     },
 });
 
-// Vue Flow composable for zoom control
-const { fitView, viewport } = useVueFlow();
+// Vue Flow composable - use built-in intersection detection
+const { fitView, viewport, getIntersectingNodes, updateNode } = useVueFlow();
+
+// Node dimensions for placement calculations
+const NODE_WIDTH = 320;
+const NODE_HEIGHT = 160;
+const NODE_GAP = 20;
+
+// Store original position before drag (for snap-back on collision)
+const dragStartPosition = ref(null);
+
+// Check collision using Vue Flow's getIntersectingNodes
+const hasIntersection = (nodeId) => {
+    const intersecting = getIntersectingNodes({ id: nodeId });
+    return intersecting.length > 0;
+};
+
+// Simple collision check for position-based checks (add/duplicate)
+const checkPositionCollision = (position, excludeNodeId = null) => {
+    return nodes.value.some(node => {
+        if (node.id === excludeNodeId) return false;
+        return !(
+            position.x + NODE_WIDTH <= node.position.x ||
+            node.position.x + NODE_WIDTH <= position.x ||
+            position.y + NODE_HEIGHT <= node.position.y ||
+            node.position.y + NODE_HEIGHT <= position.y
+        );
+    });
+};
+
+// Find next free position (grid-like, predictable)
+const findNextFreePosition = (baseX, baseY) => {
+    let position = { x: baseX, y: baseY };
+
+    if (!checkPositionCollision(position)) {
+        return position;
+    }
+
+    // Try to the right first
+    for (let i = 1; i <= 5; i++) {
+        position = { x: baseX + i * (NODE_WIDTH + NODE_GAP), y: baseY };
+        if (!checkPositionCollision(position)) {
+            return position;
+        }
+    }
+
+    // Then try rows below
+    for (let row = 1; row <= 5; row++) {
+        for (let col = 0; col <= 5; col++) {
+            position = {
+                x: baseX + col * (NODE_WIDTH + NODE_GAP),
+                y: baseY + row * (NODE_HEIGHT + NODE_GAP),
+            };
+            if (!checkPositionCollision(position)) {
+                return position;
+            }
+        }
+    }
+
+    return { x: baseX + NODE_WIDTH + NODE_GAP, y: baseY };
+};
 
 // Track spacebar state for pan/selection toggle
 const isSpacePressed = ref(false);
@@ -96,10 +156,12 @@ const handleFitView = () => {
 
 // Add a new node to the canvas
 const addNode = (type) => {
-    // Calculate position - center of visible viewport with some offset based on existing nodes
-    const existingCount = nodes.value.length;
-    const baseX = 200 + (existingCount % 5) * 350;
-    const baseY = 100 + Math.floor(existingCount / 5) * 200;
+    // Base position - start from a fixed point
+    const baseX = 200;
+    const baseY = 100;
+
+    // Find the next free position in a grid-like pattern
+    const position = findNextFreePosition(baseX, baseY);
 
     // Map type to display name
     const typeNames = {
@@ -126,7 +188,7 @@ const addNode = (type) => {
     const newNode = {
         id: `node-${crypto.randomUUID()}`,
         type: type,
-        position: { x: baseX, y: baseY },
+        position: position,
         data: {
             label: typeNames[type] || type,
             state: { mode: 'normal' },
@@ -284,13 +346,30 @@ const deleteNode = (nodeId) => {
 const duplicateNode = (nodeId) => {
     const node = nodes.value.find(n => n.id === nodeId);
     if (node) {
+        // Try to place directly to the right of the original
+        let position = {
+            x: node.position.x + NODE_WIDTH + NODE_GAP,
+            y: node.position.y,
+        };
+
+        // If that position is taken, try below
+        if (checkPositionCollision(position)) {
+            position = {
+                x: node.position.x,
+                y: node.position.y + NODE_HEIGHT + NODE_GAP,
+            };
+        }
+
+        // If still taken, find next available position nearby
+        if (checkPositionCollision(position)) {
+            position = findNextFreePosition(node.position.x, node.position.y);
+        }
+
         const newNode = {
             ...node,
             id: `node-${crypto.randomUUID()}`,
-            position: {
-                x: node.position.x + 50,
-                y: node.position.y + 50,
-            },
+            position: position,
+            data: { ...node.data },
         };
         nodes.value = [...nodes.value, newNode];
         emitDomEvent('node-duplicated', {
@@ -307,15 +386,47 @@ const duplicateNode = (nodeId) => {
 provide('nodeActions', { deleteNode, duplicateNode });
 
 // Event handlers
+const onNodeDragStart = (event) => {
+    // Store original position for snap-back
+    dragStartPosition.value = {
+        id: event.node.id,
+        x: event.node.position.x,
+        y: event.node.position.y,
+    };
+};
+
 const onNodeDragStop = (event) => {
     const node = event.node;
-    setTimeout(() => {
+
+    // Check for collision using Vue Flow's built-in intersection detection
+    const intersecting = getIntersectingNodes(node);
+
+    if (intersecting.length > 0 && dragStartPosition.value?.id === node.id) {
+        // Collision detected - snap back to original position
+        updateNode(node.id, {
+            position: {
+                x: dragStartPosition.value.x,
+                y: dragStartPosition.value.y,
+            },
+        });
+
+        // Emit the original position (no change)
+        emitDomEvent('node-position-updated', {
+            nodeId: node.id,
+            x: Math.round(dragStartPosition.value.x),
+            y: Math.round(dragStartPosition.value.y),
+        });
+    } else {
+        // No collision - emit the new position
         emitDomEvent('node-position-updated', {
             nodeId: node.id,
             x: Math.round(node.position.x),
             y: Math.round(node.position.y),
         });
-    }, 100);
+    }
+
+    // Clear stored position
+    dragStartPosition.value = null;
 };
 
 const onConnect = (connection) => {
