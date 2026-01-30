@@ -28,10 +28,17 @@ import BaseNode from './BaseNode.vue';
 import { NodeInput, NodeDropdown } from './shared';
 import { TagIcon } from './icons';
 
+// Vue Flow passes these props to custom nodes
+const props = defineProps({
+    id: { type: String, required: true },
+    data: { type: Object, default: () => ({}) },
+});
+
 const { id } = useNode();
 
-const tagName = ref('');
-const selectedScope = ref('this_chatbot');
+// Initialize from persisted data
+const tagName = ref(props.data?.tagName || '');
+const selectedScope = ref(props.data?.scope || 'this_chatbot');
 
 // Emit DOM events for Alpine/Livewire bridge
 const emitDomEvent = (name, detail) => {

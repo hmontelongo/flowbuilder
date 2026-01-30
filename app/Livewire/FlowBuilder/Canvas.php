@@ -2,10 +2,13 @@
 
 namespace App\Livewire\FlowBuilder;
 
+use App\Models\Flow;
 use Livewire\Component;
 
 class Canvas extends Component
 {
+    public Flow $flow;
+
     /**
      * @var array<int, array{id: string, type: string, name: string, x: int, y: int}>
      */
@@ -18,18 +21,28 @@ class Canvas extends Component
 
     public string $activeTool = 'flows';
 
-    public string $flowName = 'Nombre del chatbot';
+    public string $flowName = '';
 
     public function setActiveTool(string $toolId): void
     {
         $this->activeTool = $toolId;
     }
 
-    public function mount(): void
+    public function mount(Flow $flow): void
     {
-        // Start with empty canvas - blocks will be added via the palette
-        $this->nodes = [];
-        $this->edges = [];
+        $this->flow = $flow;
+        $this->nodes = $flow->nodes ?? [];
+        $this->edges = $flow->edges ?? [];
+        $this->flowName = $flow->name;
+    }
+
+    private function persist(): void
+    {
+        $this->flow->update([
+            'name' => $this->flowName,
+            'nodes' => $this->nodes,
+            'edges' => $this->edges,
+        ]);
     }
 
     public function updateNodePosition(string $nodeId, int $x, int $y): void
@@ -41,6 +54,7 @@ class Canvas extends Component
                 break;
             }
         }
+        $this->persist();
     }
 
     public function addEdge(string $edgeId, string $source, string $target): void
@@ -50,6 +64,7 @@ class Canvas extends Component
             'source' => $source,
             'target' => $target,
         ];
+        $this->persist();
     }
 
     public function removeEdge(string $edgeId): void
@@ -57,6 +72,7 @@ class Canvas extends Component
         $this->edges = array_values(
             array_filter($this->edges, fn ($edge) => $edge['id'] !== $edgeId)
         );
+        $this->persist();
     }
 
     public function removeNode(string $nodeId): void
@@ -68,6 +84,7 @@ class Canvas extends Component
         $this->edges = array_values(
             array_filter($this->edges, fn ($edge) => $edge['source'] !== $nodeId && $edge['target'] !== $nodeId)
         );
+        $this->persist();
     }
 
     public function addNode(string $nodeId, string $type, string $name, int $x, int $y): void
@@ -80,6 +97,7 @@ class Canvas extends Component
             'y' => $y,
             'data' => [],
         ];
+        $this->persist();
     }
 
     /**
@@ -95,6 +113,17 @@ class Canvas extends Component
                 break;
             }
         }
+        $this->persist();
+    }
+
+    public function clearCanvas(): void
+    {
+        $this->nodes = [];
+        $this->edges = [];
+        $this->persist();
+
+        // Dispatch browser event to reset Vue Flow
+        $this->dispatch('canvas-cleared');
     }
 
     public function render()

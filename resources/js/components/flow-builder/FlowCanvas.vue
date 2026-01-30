@@ -230,6 +230,11 @@ const handleAddNodeRequest = (e) => {
     addNode(e.detail.type);
 };
 
+const handleCanvasCleared = () => {
+    nodes.value = [];
+    edges.value = [];
+};
+
 onMounted(() => {
     window.addEventListener('fit-view', handleFitView);
     window.addEventListener('keydown', handleKeyDown);
@@ -240,6 +245,9 @@ onMounted(() => {
     if (flowCanvas) {
         flowCanvas.addEventListener('add-node-request', handleAddNodeRequest);
     }
+
+    // Listen for canvas-cleared event from Livewire
+    window.addEventListener('canvas-cleared', handleCanvasCleared);
 
     // Emit initial zoom level after mount
     setTimeout(() => {
@@ -253,6 +261,7 @@ onUnmounted(() => {
     window.removeEventListener('fit-view', handleFitView);
     window.removeEventListener('keydown', handleKeyDown);
     window.removeEventListener('keyup', handleKeyUp);
+    window.removeEventListener('canvas-cleared', handleCanvasCleared);
 
     const flowCanvas = document.getElementById('flow-canvas');
     if (flowCanvas) {
@@ -312,6 +321,7 @@ const transformNodes = (nodeList) => {
         data: {
             label: node.name,
             state: node.state || { mode: 'normal' },
+            ...node.data, // Spread persisted node data (keywords, action, etc.)
         },
     }));
 };

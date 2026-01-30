@@ -119,6 +119,12 @@ import MessageContent from './MessageContent.vue';
 import { MessageItemContainer, PositionedConnector } from './shared';
 import { MessageIcon, TextMessageIcon, AttachmentIcon, ButtonMessageIcon, LinkMessageIcon, LocationMessageIcon, ListMessageIcon } from './icons';
 
+// Vue Flow passes these props to custom nodes
+const props = defineProps({
+    id: { type: String, required: true },
+    data: { type: Object, default: () => ({}) },
+});
+
 const { id } = useNode();
 
 // Emit DOM events for Alpine/Livewire bridge
@@ -260,8 +266,8 @@ const messageTypes = [
     { id: 'list', label: 'Lista', icon: markRaw(ListMessageIcon) },
 ];
 
-// Messages state
-const messages = ref([]);
+// Messages state - initialize from persisted data
+const messages = ref(props.data?.messages || []);
 
 // Watch for message changes and emit to parent
 watch(messages, (newMessages) => {

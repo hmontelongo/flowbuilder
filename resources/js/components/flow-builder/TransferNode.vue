@@ -19,9 +19,16 @@ import BaseNode from './BaseNode.vue';
 import { NodeInput } from './shared';
 import { TransferIcon } from './icons';
 
+// Vue Flow passes these props to custom nodes
+const props = defineProps({
+    id: { type: String, required: true },
+    data: { type: Object, default: () => ({}) },
+});
+
 const { id } = useNode();
 
-const chatCenterValue = ref('');
+// Initialize from persisted data
+const chatCenterValue = ref(props.data?.chatCenter || '');
 
 // Emit DOM events for Alpine/Livewire bridge
 const emitDomEvent = (name, detail) => {

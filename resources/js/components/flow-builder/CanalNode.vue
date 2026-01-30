@@ -42,8 +42,14 @@ import { ChannelDropdown } from './shared';
 import SelectedChannelDisplay from './SelectedChannelDisplay.vue';
 import { CanalIcon } from './icons';
 
-// Vue Flow's useNode provides id, node object
-const { id, node } = useNode();
+// Vue Flow passes these props to custom nodes
+const props = defineProps({
+    id: { type: String, required: true },
+    data: { type: Object, default: () => ({}) },
+});
+
+// Vue Flow's useNode provides id for event emission
+const { id } = useNode();
 
 // Inject available channels from FlowCanvas
 const availableChannels = inject('availableChannels', ref([
@@ -55,10 +61,10 @@ const availableChannels = inject('availableChannels', ref([
 
 // Local state
 const isEditing = ref(false);
-const selectedChannelId = ref(node.value?.data?.channelId || '');
+const selectedChannelId = ref(props.data?.channelId || '');
 
 // Computed state from node data
-const nodeState = computed(() => node.value?.data?.state ?? { mode: 'normal' });
+const nodeState = computed(() => props.data?.state ?? { mode: 'normal' });
 const isReadonly = computed(() => nodeState.value.mode === 'readonly');
 
 // Find selected channel object

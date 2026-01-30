@@ -76,11 +76,18 @@ import BaseNode from './BaseNode.vue';
 import { PositionedConnector } from './shared';
 import { WaitIcon } from './icons';
 
+// Vue Flow passes these props to custom nodes
+const props = defineProps({
+    id: { type: String, required: true },
+    data: { type: Object, default: () => ({}) },
+});
+
 const { id } = useNode();
 
-const waitTime = ref(10);
-const timeUnit = ref('Segundos');
-const fallbackMessage = ref('');
+// Initialize from persisted data
+const waitTime = ref(props.data?.waitTime ?? 10);
+const timeUnit = ref(props.data?.timeUnit || 'Segundos');
+const fallbackMessage = ref(props.data?.fallbackMessage || '');
 
 // Emit DOM events for Alpine/Livewire bridge
 const emitDomEvent = (name, detail) => {

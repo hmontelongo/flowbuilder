@@ -66,5 +66,8 @@
 
         {{-- Zoom Controls --}}
         <x-flow-builder.zoom-controls />
+
+        {{-- Dev Toolbar --}}
+        <x-flow-builder.dev-toolbar />
     </main>
 </div>

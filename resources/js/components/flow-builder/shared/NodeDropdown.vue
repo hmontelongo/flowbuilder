@@ -46,7 +46,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 
 const emit = defineEmits(['update:modelValue']);
 
@@ -69,6 +69,11 @@ const triggerRef = ref(null);
 const isOpen = ref(false);
 const selectedValue = ref(props.modelValue);
 const dropdownPosition = ref({ top: 0, left: 0, width: 0 });
+
+// Sync selectedValue when modelValue changes from parent
+watch(() => props.modelValue, (newValue) => {
+    selectedValue.value = newValue;
+});
 
 const allOptions = computed(() => {
     return props.sections.flatMap(section => section.options);

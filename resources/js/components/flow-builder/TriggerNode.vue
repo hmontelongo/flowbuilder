@@ -69,14 +69,20 @@ import BaseNode from './BaseNode.vue';
 import { NodeDropdown, NodeInput, NodeToggle } from './shared';
 import { TriggerIcon } from './icons';
 
+// Vue Flow passes these props to custom nodes
+const props = defineProps({
+    id: { type: String, required: true },
+    data: { type: Object, default: () => ({}) },
+});
+
 // Vue Flow's useNode provides id for event emission
 const { id } = useNode();
 
-// State
-const selectedAction = ref('');
+// State - initialize from props.data (passed by Vue Flow)
+const selectedAction = ref(props.data?.action || '');
 const keyword = ref('');
-const keywords = ref([]);
-const exactMatch = ref(false);
+const keywords = ref(props.data?.keywords || []);
+const exactMatch = ref(props.data?.exactMatch || false);
 
 // Emit DOM events for Alpine/Livewire bridge
 const emitDomEvent = (name, detail) => {
