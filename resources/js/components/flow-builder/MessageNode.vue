@@ -4,87 +4,204 @@
             <MessageIcon />
         </template>
 
-        <div class="flex flex-col items-center gap-2 w-full">
-            <!-- Add message button -->
-            <button type="button" class="node-button-add">
-                <svg class="w-4 h-4" viewBox="0 0 8 8" fill="var(--color-fb-text)">
-                    <path d="M4.5 3.5V0H3.5V3.5H0V4.5H3.5V8H4.5V4.5H8V3.5H4.5Z"/>
-                </svg>
+        <!-- Initial state: Message type selector -->
+        <div v-if="messages.length === 0" class="flex items-center justify-center gap-1">
+            <button
+                v-for="type in messageTypes"
+                :key="type.id"
+                type="button"
+                class="message-type-btn flex items-center justify-center"
+                :title="type.label"
+                @click.stop="addMessage(type.id)"
+                @mousedown.stop
+            >
+                <component :is="type.icon" />
             </button>
+        </div>
 
-            <!-- Message input area -->
-            <div class="node-bg-input flex flex-col items-end gap-2" style="width: 277px;">
-                <!-- Toolbar -->
-                <div class="flex items-center justify-between w-full">
-                    <svg class="w-4 h-4" viewBox="0 0 16 16" fill="var(--color-fb-text)">
-                        <rect x="1" y="3" width="14" height="2"/>
-                        <rect x="1" y="7" width="10" height="2"/>
-                        <rect x="1" y="11" width="7" height="2"/>
-                    </svg>
-                    <button type="button" class="p-1 hover:bg-gray-200 rounded">
-                        <svg class="w-4 h-4" viewBox="0 0 16 16" fill="var(--color-fb-text)">
-                            <path d="M12 4L4 12M4 4L12 12" stroke="var(--color-fb-text)" stroke-width="1.5" fill="none"/>
-                        </svg>
+        <!-- Messages list (after adding) -->
+        <div v-else class="messages-container relative flex flex-col gap-1 w-full">
+            <!-- Top add zone -->
+            <div class="add-zone add-zone-top group/top">
+                <div v-if="activeAddPosition === 'top'" class="type-picker">
+                    <button
+                        v-for="type in messageTypes"
+                        :key="type.id"
+                        type="button"
+                        class="type-picker-btn"
+                        :title="type.label"
+                        @click.stop="insertMessageOfType(0, type.id)"
+                        @mousedown.stop
+                    >
+                        <component :is="type.icon" />
                     </button>
                 </div>
-
-                <!-- Input with file icons -->
-                <div class="node-input flex flex-col items-center gap-2 w-full" style="border-radius: 2px;">
-                    <div class="flex items-center gap-1">
-                        <!-- File type icons -->
-                        <button type="button" class="p-0.5 hover:bg-gray-100 rounded" title="Imagen">
-                            <svg class="w-4 h-4" viewBox="0 0 16 16" fill="var(--color-fb-text-muted)">
-                                <rect x="2" y="2" width="12" height="12" rx="1" stroke="var(--color-fb-text-muted)" fill="none"/>
-                                <circle cx="5" cy="5" r="1"/>
-                                <path d="M2 12L6 8L9 11L11 9L14 12"/>
-                            </svg>
-                        </button>
-                        <button type="button" class="p-0.5 hover:bg-gray-100 rounded" title="Video">
-                            <svg class="w-4 h-4" viewBox="0 0 16 16" fill="var(--color-fb-text-muted)">
-                                <rect x="1" y="3" width="10" height="10" rx="1" stroke="var(--color-fb-text-muted)" fill="none"/>
-                                <path d="M11 6L15 4V12L11 10"/>
-                            </svg>
-                        </button>
-                        <button type="button" class="p-0.5 hover:bg-gray-100 rounded" title="Documento">
-                            <svg class="w-4 h-4" viewBox="0 0 16 16" fill="var(--color-fb-text-muted)">
-                                <path d="M4 1H10L13 4V14C13 14.5 12.5 15 12 15H4C3.5 15 3 14.5 3 14V2C3 1.5 3.5 1 4 1Z" stroke="var(--color-fb-text-muted)" fill="none"/>
-                                <path d="M10 1V4H13"/>
-                            </svg>
-                        </button>
-                        <button type="button" class="p-0.5 hover:bg-gray-100 rounded" title="Sticker">
-                            <svg class="w-4 h-4" viewBox="0 0 16 16" fill="var(--color-fb-text-muted)">
-                                <rect x="2" y="2" width="12" height="12" rx="2" stroke="var(--color-fb-text-muted)" fill="none"/>
-                                <path d="M10 2V6C10 7 11 8 12 8H14"/>
-                            </svg>
-                        </button>
-                        <button type="button" class="p-0.5 hover:bg-gray-100 rounded" title="Audio">
-                            <svg class="w-4 h-4" viewBox="0 0 16 16" fill="var(--color-fb-text-muted)">
-                                <circle cx="4" cy="12" r="2" stroke="var(--color-fb-text-muted)" fill="none"/>
-                                <circle cx="12" cy="10" r="2" stroke="var(--color-fb-text-muted)" fill="none"/>
-                                <path d="M6 12V4L14 2V10"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <span class="node-text-xs node-text-placeholder text-center w-full overflow-hidden text-ellipsis">Selecciona o arrastra el archivo a adjuntar</span>
-                </div>
-
-                <!-- Formats link -->
-                <span class="node-text-link">Formatos recomendados</span>
+                <button
+                    v-else
+                    type="button"
+                    class="add-btn-mini opacity-0 group-hover/top:opacity-100"
+                    title="Agregar mensaje"
+                    @click.stop="openTypePicker('top')"
+                    @mousedown.stop
+                >
+                    <svg class="w-3 h-3" viewBox="0 0 12 12" fill="currentColor">
+                        <path d="M6.5 1H5.5V5.5H1V6.5H5.5V11H6.5V6.5H11V5.5H6.5V1Z"/>
+                    </svg>
+                </button>
             </div>
 
-            <!-- Add message button (bottom) -->
-            <button type="button" class="node-button-add">
-                <svg class="w-4 h-4" viewBox="0 0 8 8" fill="var(--color-fb-text)">
-                    <path d="M4.5 3.5V0H3.5V3.5H0V4.5H3.5V8H4.5V4.5H8V3.5H4.5Z"/>
-                </svg>
-            </button>
+            <!-- Message items wrapped in consistent container -->
+            <MessageItemContainer
+                v-for="(message, index) in messages"
+                :key="message.id"
+                :is-dragging="draggedIndex === index"
+                :is-drag-over="dragOverIndex === index"
+                @remove="removeMessage(index)"
+                @dragstart="handleDragStart(index)"
+                @dragend="handleDragEnd"
+                @dragover="handleDragOver(index)"
+                @dragleave="handleDragLeave"
+                @drop="handleDrop(index)"
+            >
+                <MessageContent :message="message" />
+            </MessageItemContainer>
+
+            <!-- Bottom add zone -->
+            <div class="add-zone add-zone-bottom group/bottom">
+                <div v-if="activeAddPosition === 'bottom'" class="type-picker">
+                    <button
+                        v-for="type in messageTypes"
+                        :key="type.id"
+                        type="button"
+                        class="type-picker-btn"
+                        :title="type.label"
+                        @click.stop="addMessageOfType(type.id)"
+                        @mousedown.stop
+                    >
+                        <component :is="type.icon" />
+                    </button>
+                </div>
+                <button
+                    v-else
+                    type="button"
+                    class="add-btn-mini opacity-0 group-hover/bottom:opacity-100"
+                    title="Agregar mensaje"
+                    @click.stop="openTypePicker('bottom')"
+                    @mousedown.stop
+                >
+                    <svg class="w-3 h-3" viewBox="0 0 12 12" fill="currentColor">
+                        <path d="M6.5 1H5.5V5.5H1V6.5H5.5V11H6.5V6.5H11V5.5H6.5V1Z"/>
+                    </svg>
+                </button>
+            </div>
         </div>
     </BaseNode>
 </template>
 
 <script setup>
+import { ref, markRaw, onMounted, onUnmounted } from 'vue';
 import BaseNode from './BaseNode.vue';
-import { MessageIcon } from './icons';
+import MessageContent from './MessageContent.vue';
+import { MessageItemContainer } from './shared';
+import { MessageIcon, TextMessageIcon, AttachmentIcon, ButtonMessageIcon, LinkMessageIcon, LocationMessageIcon, ListMessageIcon } from './icons';
+
+// Message types available in WhatsApp Cloud API
+const messageTypes = [
+    { id: 'text', label: 'Texto', icon: markRaw(TextMessageIcon) },
+    { id: 'attachment', label: 'Archivo adjunto', icon: markRaw(AttachmentIcon) },
+    { id: 'button', label: 'Botones', icon: markRaw(ButtonMessageIcon) },
+    { id: 'link', label: 'Enlace', icon: markRaw(LinkMessageIcon) },
+    { id: 'location', label: 'Ubicación', icon: markRaw(LocationMessageIcon) },
+    { id: 'list', label: 'Lista', icon: markRaw(ListMessageIcon) },
+];
+
+// Messages state
+const messages = ref([]);
+
+// Type picker state
+const activeAddPosition = ref(null);
+
+// Drag and drop state
+const draggedIndex = ref(null);
+const dragOverIndex = ref(null);
+
+const openTypePicker = (position) => {
+    activeAddPosition.value = position;
+};
+
+const closeTypePicker = () => {
+    activeAddPosition.value = null;
+};
+
+const addMessage = (typeId) => {
+    messages.value.push({
+        id: `msg-${crypto.randomUUID()}`,
+        type: typeId,
+        content: '',
+    });
+};
+
+const addMessageOfType = (typeId) => {
+    addMessage(typeId);
+    closeTypePicker();
+};
+
+const insertMessageOfType = (index, typeId) => {
+    messages.value.splice(index, 0, {
+        id: `msg-${crypto.randomUUID()}`,
+        type: typeId,
+        content: '',
+    });
+    closeTypePicker();
+};
+
+const removeMessage = (index) => {
+    messages.value.splice(index, 1);
+};
+
+// Drag and drop handlers
+const handleDragStart = (index) => {
+    draggedIndex.value = index;
+};
+
+const handleDragEnd = () => {
+    draggedIndex.value = null;
+    dragOverIndex.value = null;
+};
+
+const handleDragOver = (index) => {
+    if (draggedIndex.value !== null && draggedIndex.value !== index) {
+        dragOverIndex.value = index;
+    }
+};
+
+const handleDragLeave = () => {
+    dragOverIndex.value = null;
+};
+
+const handleDrop = (dropIndex) => {
+    if (draggedIndex.value !== null && draggedIndex.value !== dropIndex) {
+        const draggedMessage = messages.value.splice(draggedIndex.value, 1)[0];
+        messages.value.splice(dropIndex, 0, draggedMessage);
+    }
+    draggedIndex.value = null;
+    dragOverIndex.value = null;
+};
+
+// Close type picker when clicking outside
+const handleClickOutside = () => {
+    if (activeAddPosition.value) {
+        closeTypePicker();
+    }
+};
+
+onMounted(() => {
+    document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+    document.removeEventListener('click', handleClickOutside);
+});
 
 const nodeConfig = {
     header: {
@@ -103,3 +220,97 @@ const nodeConfig = {
     },
 };
 </script>
+
+<style scoped>
+.messages-container {
+    overflow: visible;
+}
+
+.message-type-btn {
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--color-fb-neutral-500);
+    border-radius: 4px;
+    color: var(--color-fb-neutral-600);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.message-type-btn:hover {
+    background: var(--color-fb-neutral-100);
+    border-color: var(--color-fb-neutral-700);
+    color: var(--color-fb-neutral-800);
+}
+
+.add-zone {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.add-zone-top {
+    top: -6px;
+}
+
+.add-zone-bottom {
+    bottom: -6px;
+}
+
+.add-btn-mini {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-fb-neutral-500);
+    border-radius: 3px;
+    background: var(--color-fb-neutral-0);
+    color: var(--color-fb-neutral-500);
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transition: opacity 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.add-btn-mini:hover {
+    background: var(--color-fb-neutral-100);
+    border-color: var(--color-fb-neutral-600);
+    color: var(--color-fb-neutral-700);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+.type-picker {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px;
+    background: var(--color-fb-neutral-0);
+    border: 1px solid var(--color-fb-neutral-300);
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.type-picker-btn {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 3px;
+    color: var(--color-fb-neutral-600);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.type-picker-btn:hover {
+    background: var(--color-fb-neutral-100);
+    color: var(--color-fb-neutral-800);
+}
+</style>

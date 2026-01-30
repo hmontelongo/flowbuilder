@@ -1,5 +1,5 @@
 <template>
-    <div class="relative">
+    <div ref="triggerRef" class="relative">
         <!-- Search input -->
         <div
             class="node-input flex items-center gap-2"
@@ -21,21 +21,15 @@
             </svg>
         </div>
 
-        <!-- Dropdown menu - Figma: bg-#f9fafb, rounded-8px, pb-16px pt-8px px-8px -->
-        <div
-            v-if="isOpen && groupedChannels.length > 0"
-            class="absolute left-0 right-0 flex flex-col gap-4 rounded-lg pb-4 pt-2 px-2"
-            :style="{
-                top: 'calc(100% + var(--fb-space-xs))',
-                zIndex: 9999,
-                maxHeight: '280px',
-                overflowY: 'auto',
-                backgroundColor: 'var(--color-fb-neutral-50)',
-                boxShadow: 'var(--fb-shadow-dropdown)',
-            }"
-            @click.stop
-            @mousedown.stop
-        >
+        <!-- Dropdown menu (teleported to body for proper z-index) -->
+        <Teleport to="body">
+            <div
+                v-if="isOpen && groupedChannels.length > 0"
+                class="fixed flex flex-col gap-4 rounded-lg pb-4 pt-2 px-2"
+                :style="dropdownStyle"
+                @click.stop
+                @mousedown.stop
+            >
             <!-- Channel sections -->
             <template v-for="(group, index) in groupedChannels" :key="group.type">
                 <div class="flex flex-col gap-1">
@@ -77,27 +71,26 @@
             </div>
         </div>
 
-        <!-- Empty state when no channels match search -->
-        <div
-            v-if="isOpen && groupedChannels.length === 0"
-            class="absolute left-0 right-0 flex items-center justify-center py-4 rounded-lg"
-            :style="{
-                top: 'calc(100% + var(--fb-space-xs))',
-                zIndex: 9999,
-                backgroundColor: 'var(--color-fb-neutral-50)',
-                boxShadow: 'var(--fb-shadow-dropdown)',
-            }"
-            @click.stop
-            @mousedown.stop
-        >
-            <span class="text-xs" :style="{ color: 'var(--color-fb-neutral-500)' }">No se encontraron canales</span>
-        </div>
+            <!-- Empty state when no channels match search -->
+            <div
+                v-if="isOpen && groupedChannels.length === 0"
+                class="fixed flex items-center justify-center py-4 rounded-lg"
+                :style="dropdownStyle"
+                @click.stop
+                @mousedown.stop
+            >
+                <span class="text-xs" :style="{ color: 'var(--color-fb-neutral-500)' }">No se encontraron canales</span>
+            </div>
+        </Teleport>
     </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { WhatsAppIcon, WebchatIcon, PlusIcon } from '../icons';
+
+// Track when the dropdown was opened to prevent immediate close from the same click event
+let openedAt = 0;
 
 const props = defineProps({
     modelValue: {
@@ -120,9 +113,33 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'add-channel', 'open', 'close']);
 
+const triggerRef = ref(null);
 const isOpen = ref(false);
 const searchQuery = ref('');
 const searchInput = ref(null);
+const dropdownPosition = ref({ top: 0, left: 0, width: 0 });
+
+const dropdownStyle = computed(() => ({
+    top: `${dropdownPosition.value.top}px`,
+    left: `${dropdownPosition.value.left}px`,
+    width: `${dropdownPosition.value.width}px`,
+    zIndex: 99999,
+    maxHeight: '280px',
+    overflowY: 'auto',
+    backgroundColor: 'var(--color-fb-neutral-50)',
+    boxShadow: 'var(--fb-shadow-dropdown)',
+}));
+
+const updatePosition = () => {
+    if (triggerRef.value) {
+        const rect = triggerRef.value.getBoundingClientRect();
+        dropdownPosition.value = {
+            top: rect.bottom + 4,
+            left: rect.left,
+            width: rect.width,
+        };
+    }
+};
 
 const channelTypeLabels = {
     whatsapp: 'WhatsApp',
@@ -163,7 +180,9 @@ const getChannelIcon = (type) => {
 
 const openDropdown = () => {
     if (!isOpen.value) {
+        updatePosition();
         isOpen.value = true;
+        openedAt = Date.now();
         emit('open');
         nextTick(() => {
             searchInput.value?.focus();
@@ -185,7 +204,9 @@ const selectChannel = (channel) => {
 };
 
 const handleClickOutside = (event) => {
-    if (isOpen.value) {
+    // Ignore clicks within 100ms of opening to prevent race condition
+    // when clicking on SelectedChannelDisplay to edit
+    if (isOpen.value && Date.now() - openedAt > 100) {
         closeDropdown();
     }
 };

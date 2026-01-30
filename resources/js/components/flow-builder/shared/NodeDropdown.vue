@@ -1,9 +1,9 @@
 <template>
-    <div class="relative">
+    <div ref="triggerRef" class="relative">
         <!-- Trigger button -->
         <div
             class="node-input flex items-center gap-2 cursor-pointer"
-            @click.stop="isOpen = !isOpen"
+            @click.stop="toggleDropdown"
             @mousedown.stop
         >
             <span
@@ -15,36 +15,38 @@
             </svg>
         </div>
 
-        <!-- Dropdown menu -->
-        <div
-            v-if="isOpen"
-            class="node-dropdown-menu absolute left-0 right-0 flex flex-col gap-1"
-            style="top: calc(100% + 4px); z-index: 9999;"
-            @click.stop
-            @mousedown.stop
-        >
-            <template v-for="(section, index) in sections" :key="section.label">
-                <!-- Divider (between sections) -->
-                <div v-if="index > 0" class="node-dropdown-divider"></div>
+        <!-- Dropdown menu (teleported to body for proper z-index) -->
+        <Teleport to="body">
+            <div
+                v-if="isOpen"
+                class="node-dropdown-menu fixed flex flex-col gap-1"
+                :style="dropdownStyle"
+                @click.stop
+                @mousedown.stop
+            >
+                <template v-for="(section, index) in sections" :key="section.label">
+                    <!-- Divider (between sections) -->
+                    <div v-if="index > 0" class="node-dropdown-divider"></div>
 
-                <!-- Section header -->
-                <div class="node-dropdown-header">{{ section.label }}</div>
+                    <!-- Section header -->
+                    <div class="node-dropdown-header">{{ section.label }}</div>
 
-                <!-- Options -->
-                <div
-                    v-for="option in section.options"
-                    :key="option.value"
-                    class="node-dropdown-option"
-                    :class="{ 'is-selected': selectedValue === option.value }"
-                    @click="selectOption(option)"
-                >{{ option.label }}</div>
-            </template>
-        </div>
+                    <!-- Options -->
+                    <div
+                        v-for="option in section.options"
+                        :key="option.value"
+                        class="node-dropdown-option"
+                        :class="{ 'is-selected': selectedValue === option.value }"
+                        @click="selectOption(option)"
+                    >{{ option.label }}</div>
+                </template>
+            </div>
+        </Teleport>
     </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 
 const emit = defineEmits(['update:modelValue']);
 
@@ -63,8 +65,10 @@ const props = defineProps({
     },
 });
 
+const triggerRef = ref(null);
 const isOpen = ref(false);
 const selectedValue = ref(props.modelValue);
+const dropdownPosition = ref({ top: 0, left: 0, width: 0 });
 
 const allOptions = computed(() => {
     return props.sections.flatMap(section => section.options);
@@ -73,6 +77,31 @@ const allOptions = computed(() => {
 const selectedOption = computed(() => {
     return allOptions.value.find(opt => opt.value === selectedValue.value) || null;
 });
+
+const dropdownStyle = computed(() => ({
+    top: `${dropdownPosition.value.top}px`,
+    left: `${dropdownPosition.value.left}px`,
+    width: `${dropdownPosition.value.width}px`,
+    zIndex: 99999,
+}));
+
+const updatePosition = () => {
+    if (triggerRef.value) {
+        const rect = triggerRef.value.getBoundingClientRect();
+        dropdownPosition.value = {
+            top: rect.bottom + 4,
+            left: rect.left,
+            width: rect.width,
+        };
+    }
+};
+
+const toggleDropdown = () => {
+    if (!isOpen.value) {
+        updatePosition();
+    }
+    isOpen.value = !isOpen.value;
+};
 
 const selectOption = (option) => {
     selectedValue.value = option.value;

@@ -144,3 +144,229 @@ export const PlusIcon = {
         ]);
     },
 };
+
+// Message type icons for Message block
+
+// Text message icon (Tt)
+export const TextMessageIcon = {
+    render() {
+        return h('svg', {
+            class: 'w-4 h-4',
+            viewBox: '0 0 16 16',
+            fill: 'currentColor',
+        }, [
+            h('path', {
+                d: 'M2 3H8V4.5H5.75V11H4.25V4.5H2V3ZM7 6H14V7.5H11.25V13H9.75V7.5H7V6Z',
+            }),
+        ]);
+    },
+};
+
+// Attachment icon (paperclip)
+export const AttachmentIcon = {
+    render() {
+        return h('svg', {
+            class: 'w-4 h-4',
+            viewBox: '0 0 16 16',
+            fill: 'none',
+            stroke: 'currentColor',
+            'stroke-width': '1.2',
+        }, [
+            h('path', {
+                d: 'M13.5 7.5L7.5 13.5C6.4 14.6 4.6 14.6 3.5 13.5C2.4 12.4 2.4 10.6 3.5 9.5L10 3C10.8 2.2 12.2 2.2 13 3C13.8 3.8 13.8 5.2 13 6L6.5 12.5C6.1 12.9 5.4 12.9 5 12.5C4.6 12.1 4.6 11.4 5 11L11 5',
+                'stroke-linecap': 'round',
+                'stroke-linejoin': 'round',
+            }),
+        ]);
+    },
+};
+
+// Button message icon
+export const ButtonMessageIcon = {
+    render() {
+        return h('svg', {
+            class: 'w-4 h-4',
+            viewBox: '0 0 16 16',
+            fill: 'currentColor',
+        }, [
+            h('rect', { x: '2', y: '5', width: '12', height: '6', rx: '1', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.2' }),
+            h('rect', { x: '5', y: '7', width: '6', height: '2', rx: '0.5' }),
+        ]);
+    },
+};
+
+// Link message icon
+export const LinkMessageIcon = {
+    render() {
+        return h('svg', {
+            class: 'w-4 h-4',
+            viewBox: '0 0 16 16',
+            fill: 'none',
+            stroke: 'currentColor',
+            'stroke-width': '1.2',
+        }, [
+            h('path', {
+                d: 'M6.5 9.5L9.5 6.5M7 11L5 13C4 14 2 14 1 13C0 12 0 10 1 9L3 7M9 5L11 3C12 2 14 2 15 3C16 4 16 6 15 7L13 9',
+                'stroke-linecap': 'round',
+                'stroke-linejoin': 'round',
+            }),
+        ]);
+    },
+};
+
+// Location message icon
+export const LocationMessageIcon = {
+    render() {
+        return h('svg', {
+            class: 'w-4 h-4',
+            viewBox: '0 0 16 16',
+            fill: 'currentColor',
+        }, [
+            h('path', {
+                d: 'M8 1C5.2 1 3 3.2 3 6C3 9.5 8 15 8 15C8 15 13 9.5 13 6C13 3.2 10.8 1 8 1ZM8 8C6.9 8 6 7.1 6 6C6 4.9 6.9 4 8 4C9.1 4 10 4.9 10 6C10 7.1 9.1 8 8 8Z',
+            }),
+        ]);
+    },
+};
+
+// List message icon
+export const ListMessageIcon = {
+    render() {
+        return h('svg', {
+            class: 'w-4 h-4',
+            viewBox: '0 0 16 16',
+            fill: 'currentColor',
+        }, [
+            h('rect', { x: '2', y: '3', width: '2', height: '2' }),
+            h('rect', { x: '6', y: '3', width: '8', height: '2' }),
+            h('rect', { x: '2', y: '7', width: '2', height: '2' }),
+            h('rect', { x: '6', y: '7', width: '8', height: '2' }),
+            h('rect', { x: '2', y: '11', width: '2', height: '2' }),
+            h('rect', { x: '6', y: '11', width: '8', height: '2' }),
+        ]);
+    },
+};
+
+// Footer icon (short paragraph lines) - for CTA URL message options
+export const FooterIcon = {
+    render() {
+        return h('svg', {
+            class: 'w-4 h-4',
+            viewBox: '0 0 16 16',
+            fill: 'currentColor',
+        }, [
+            h('rect', { x: '3', y: '6', width: '10', height: '1' }),
+            h('rect', { x: '3', y: '9', width: '10', height: '1' }),
+        ]);
+    },
+};
+
+// Launch icon (external link) - for CTA URL button row
+export const LaunchIcon = {
+    render() {
+        return h('svg', {
+            class: 'w-4 h-4',
+            viewBox: '0 0 16 16',
+            fill: 'currentColor',
+        }, [
+            h('path', {
+                d: 'M13 9V13C13 13.55 12.55 14 12 14H3C2.45 14 2 13.55 2 13V4C2 3.45 2.45 3 3 3H7V4H3V13H12V9H13Z',
+            }),
+            h('path', {
+                d: 'M10 2V3H12.29L6.64 8.65L7.35 9.36L13 3.71V6H14V2H10Z',
+            }),
+        ]);
+    },
+};
+
+// Header text icon (Aa) - for CTA URL message header option
+export const HeaderTextIcon = {
+    render() {
+        return h('svg', {
+            class: 'w-3 h-3',
+            viewBox: '0 0 12 12',
+            fill: 'currentColor',
+        }, [
+            h('path', {
+                d: 'M1.5 2.5H5.5V3.5H4V8.5H3V3.5H1.5V2.5ZM5.5 5H10.5V6H8.5V10H7.5V6H5.5V5Z',
+            }),
+        ]);
+    },
+};
+
+// File type icons for FileUploadBox
+
+// Image icon (landscape/photo)
+export const ImageFileIcon = {
+    render() {
+        return h('svg', {
+            class: 'w-4 h-4',
+            viewBox: '0 0 16 16',
+            fill: 'currentColor',
+        }, [
+            h('path', {
+                d: 'M14 2H2C1.45 2 1 2.45 1 3V13C1 13.55 1.45 14 2 14H14C14.55 14 15 13.55 15 13V3C15 2.45 14.55 2 14 2ZM14 13H2V3H14V13ZM5 8C5.55 8 6 7.55 6 7C6 6.45 5.55 6 5 6C4.45 6 4 6.45 4 7C4 7.55 4.45 8 5 8ZM12 11H4L6.5 8L7.5 9.5L10 6L12 11Z',
+            }),
+        ]);
+    },
+};
+
+// Video icon (play button)
+export const VideoFileIcon = {
+    render() {
+        return h('svg', {
+            class: 'w-4 h-4',
+            viewBox: '0 0 16 16',
+            fill: 'currentColor',
+        }, [
+            h('path', {
+                d: 'M8 1C4.13 1 1 4.13 1 8C1 11.87 4.13 15 8 15C11.87 15 15 11.87 15 8C15 4.13 11.87 1 8 1ZM8 14C4.69 14 2 11.31 2 8C2 4.69 4.69 2 8 2C11.31 2 14 4.69 14 8C14 11.31 11.31 14 8 14ZM6 11L11 8L6 5V11Z',
+            }),
+        ]);
+    },
+};
+
+// Sticker/GIF icon (star/sparkle)
+export const StickerFileIcon = {
+    render() {
+        return h('svg', {
+            class: 'w-4 h-4',
+            viewBox: '0 0 16 16',
+            fill: 'currentColor',
+        }, [
+            h('path', {
+                d: 'M8 1L9.5 5.5H14L10.5 8.5L12 13L8 10L4 13L5.5 8.5L2 5.5H6.5L8 1Z',
+            }),
+        ]);
+    },
+};
+
+// Document icon (file/page)
+export const DocumentFileIcon = {
+    render() {
+        return h('svg', {
+            class: 'w-4 h-4',
+            viewBox: '0 0 16 16',
+            fill: 'currentColor',
+        }, [
+            h('path', {
+                d: 'M12 1H4C3.45 1 3 1.45 3 2V14C3 14.55 3.45 15 4 15H12C12.55 15 13 14.55 13 14V2C13 1.45 12.55 1 12 1ZM12 14H4V2H12V14ZM5 6H11V7H5V6ZM5 9H11V10H5V9ZM5 12H8V13H5V12Z',
+            }),
+        ]);
+    },
+};
+
+// Audio/Music icon (music note)
+export const AudioFileIcon = {
+    render() {
+        return h('svg', {
+            class: 'w-4 h-4',
+            viewBox: '0 0 16 16',
+            fill: 'currentColor',
+        }, [
+            h('path', {
+                d: 'M13 2V10C13 11.66 11.66 13 10 13C8.34 13 7 11.66 7 10C7 8.34 8.34 7 10 7C10.55 7 11.06 7.15 11.5 7.42V4H8V2H13ZM10 9C9.45 9 9 9.45 9 10C9 10.55 9.45 11 10 11C10.55 11 11 10.55 11 10C11 9.45 10.55 9 10 9ZM6 5V11.5C6 13.16 4.66 14.5 3 14.5C1.34 14.5 0 13.16 0 11.5C0 9.84 1.34 8.5 3 8.5C3.55 8.5 4.06 8.65 4.5 8.92V5H6ZM3 10.5C2.45 10.5 2 10.95 2 11.5C2 12.05 2.45 12.5 3 12.5C3.55 12.5 4 12.05 4 11.5C4 10.95 3.55 10.5 3 10.5Z',
+            }),
+        ]);
+    },
+};

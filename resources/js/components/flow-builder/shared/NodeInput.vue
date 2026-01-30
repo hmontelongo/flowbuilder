@@ -1,5 +1,7 @@
 <template>
     <div class="node-input flex items-center gap-2">
+        <!-- Left icon slot -->
+        <slot name="leftIcon" />
         <input
             :value="modelValue"
             type="text"
