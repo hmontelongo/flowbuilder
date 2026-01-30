@@ -85,9 +85,9 @@
                 placeholder="Pie de página (opcional)"
             />
 
-            <!-- Buttons list -->
+            <!-- Buttons list (each button is an output - blue border indicates output) -->
             <div v-if="buttons.length > 0" class="flex flex-col gap-1">
-                <ButtonInput
+                <OutputButtonInput
                     v-for="(btn, idx) in buttons"
                     :key="btn.id"
                     v-model="btn.title"
@@ -154,12 +154,15 @@
                 placeholder="Pie de página (opcional)"
             />
 
-            <!-- Button title with launch icon -->
-            <NodeInput v-model="ctaButtonText" placeholder="Título del botón">
+            <!-- Button title with launch icon (blue border indicates output) -->
+            <OutputNodeInput
+                v-model="ctaButtonText"
+                placeholder="Título del botón"
+            >
                 <template #leftIcon>
                     <LaunchIcon />
                 </template>
-            </NodeInput>
+            </OutputNodeInput>
 
             <!-- URL input with link icon -->
             <NodeInput v-model="ctaUrl" placeholder="https://ejemplo.com">
@@ -213,8 +216,8 @@
 </template>
 
 <script setup>
-import { ref, computed, markRaw } from 'vue';
-import { NodeInput, TextToolbar, MessageOptionsBar, ToggleButtonGroup, ToggleIconButton, FileUploadBox, ButtonInput, AddButtonCounter } from './shared';
+import { ref, computed, markRaw, inject, watch, onMounted, onUnmounted } from 'vue';
+import { NodeInput, TextToolbar, MessageOptionsBar, ToggleButtonGroup, ToggleIconButton, FileUploadBox, ButtonInput, AddButtonCounter, OutputButtonInput, OutputNodeInput } from './shared';
 import { FooterIcon, LaunchIcon, LinkMessageIcon, AttachmentIcon, HeaderTextIcon } from './icons';
 
 const props = defineProps({
@@ -223,6 +226,9 @@ const props = defineProps({
         required: true,
     },
 });
+
+// Inject the output buttons registry from MessageNode
+const outputButtonsRegistry = inject('outputButtonsRegistry', null);
 
 // Content state
 const content = ref(props.message.content || '');
@@ -292,6 +298,34 @@ const reorderButtons = ({ from, to }) => {
 const selectButtonFile = () => {
     console.log('Button header file selection not implemented');
 };
+
+// CTA button ID for link message type
+const ctaButtonId = ref(crypto.randomUUID());
+
+// Register output buttons with parent MessageNode
+const updateOutputRegistry = () => {
+    if (!outputButtonsRegistry) return;
+
+    if (props.message.type === 'button') {
+        outputButtonsRegistry.updateButtons(props.message.id, buttons.value);
+    } else if (props.message.type === 'link') {
+        outputButtonsRegistry.updateButtons(props.message.id, [{ id: ctaButtonId.value }]);
+    }
+};
+
+// Watch for button changes and update registry
+watch(buttons, updateOutputRegistry, { deep: true });
+
+// Register on mount, unregister on unmount
+onMounted(() => {
+    updateOutputRegistry();
+});
+
+onUnmounted(() => {
+    if (outputButtonsRegistry) {
+        outputButtonsRegistry.updateButtons(props.message.id, []);
+    }
+});
 
 // Location state
 const latitude = ref('');

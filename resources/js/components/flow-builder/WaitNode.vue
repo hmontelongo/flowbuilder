@@ -5,14 +5,15 @@
         </template>
 
         <template #extra-connectors="{ isHandleConnected }">
-            <!-- No response output connector (red border) with semi-circle notch -->
-            <div class="absolute flex items-center justify-center" style="right: -4px; top: 156px;">
-                <!-- Semi-circle border (shows left half, red for error) -->
-                <div class="node-connector-notch">
-                    <div class="node-connector-notch-inner node-connector-notch-right node-connector-notch-error"></div>
-                </div>
-                <NodeConnector id="no-response" type="source" side="right" variant="error" :connected="isHandleConnected('no-response').value" />
-            </div>
+            <!-- No response output connector (red border) -->
+            <PositionedConnector
+                id="no-response"
+                type="source"
+                side="right"
+                variant="error"
+                :connected="isHandleConnected('no-response').value"
+                :top="156"
+            />
         </template>
 
         <div class="flex flex-col items-end gap-4 w-full">
@@ -71,7 +72,7 @@
 <script setup>
 import { ref } from 'vue';
 import BaseNode from './BaseNode.vue';
-import { NodeConnector } from './shared';
+import { PositionedConnector } from './shared';
 import { WaitIcon } from './icons';
 
 const waitTime = ref(10);

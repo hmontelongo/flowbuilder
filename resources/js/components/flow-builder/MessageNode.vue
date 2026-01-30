@@ -4,6 +4,19 @@
             <MessageIcon />
         </template>
 
+        <!-- Dynamic output connectors for buttons -->
+        <template v-if="outputButtons.length > 0" #extra-connectors="{ isHandleConnected }">
+            <PositionedConnector
+                v-for="(btn, idx) in outputButtons"
+                :key="btn.id"
+                :id="`button-${btn.id}`"
+                type="source"
+                side="right"
+                :connected="isHandleConnected(`button-${btn.id}`).value"
+                :bottom="12 + (idx * 30)"
+            />
+        </template>
+
         <!-- Initial state: Message type selector -->
         <div v-if="messages.length === 0" class="flex items-center justify-center gap-1">
             <button
@@ -99,11 +112,27 @@
 </template>
 
 <script setup>
-import { ref, markRaw, onMounted, onUnmounted } from 'vue';
+import { ref, computed, markRaw, provide, onMounted, onUnmounted } from 'vue';
 import BaseNode from './BaseNode.vue';
 import MessageContent from './MessageContent.vue';
-import { MessageItemContainer } from './shared';
+import { MessageItemContainer, PositionedConnector } from './shared';
 import { MessageIcon, TextMessageIcon, AttachmentIcon, ButtonMessageIcon, LinkMessageIcon, LocationMessageIcon, ListMessageIcon } from './icons';
+
+// Output buttons registry - shared with MessageContent via provide/inject
+const outputButtons = ref([]);
+
+// Update output buttons for a message (called by MessageContent)
+const updateOutputButtons = (messageId, buttons) => {
+    // Atomic update: remove old buttons and add new ones in single assignment
+    outputButtons.value = [
+        ...outputButtons.value.filter(b => b.messageId !== messageId),
+        ...buttons.map(btn => ({ id: btn.id, messageId })),
+    ];
+};
+
+provide('outputButtonsRegistry', {
+    updateButtons: updateOutputButtons,
+});
 
 // Message types available in WhatsApp Cloud API
 const messageTypes = [
@@ -203,7 +232,12 @@ onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside);
 });
 
-const nodeConfig = {
+// Check if any message has button outputs (button type or link type)
+const hasButtonOutputs = computed(() =>
+    messages.value.some(m => m.type === 'button' || m.type === 'link')
+);
+
+const nodeConfig = computed(() => ({
     header: {
         iconColor: 'var(--color-fb-node-message)',
         icon: MessageIcon,
@@ -216,9 +250,10 @@ const nodeConfig = {
     },
     connectors: {
         input: true,
-        output: true,
+        // Hide default output when there are button outputs (they become the outputs)
+        output: !hasButtonOutputs.value,
     },
-};
+}));
 </script>
 
 <style scoped>
