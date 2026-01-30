@@ -4,22 +4,101 @@
             <TriggerIcon />
         </template>
 
+        <!-- Trigger type dropdown -->
         <NodeDropdown
             v-model="selectedAction"
             placeholder="Selecciona una acción para iniciar el flujo"
             :sections="dropdownSections"
         />
+
+        <!-- Keyword input (shown when keyword_message or regex is selected) -->
+        <NodeInput
+            v-if="showKeywordInput"
+            v-model="keyword"
+            :placeholder="keywordPlaceholder"
+            icon="add"
+            class="mt-2"
+            @action="addKeyword"
+        />
+
+        <!-- Keywords list -->
+        <div v-if="keywords.length > 0" class="mt-2 flex flex-wrap gap-1">
+            <span
+                v-for="kw in keywords"
+                :key="kw"
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded node-text-xs"
+                style="background-color: var(--color-fb-neutral-100);"
+            >
+                {{ kw }}
+                <button
+                    type="button"
+                    class="hover:opacity-70"
+                    @click.stop="removeKeyword(kw)"
+                    @mousedown.stop
+                >
+                    <svg class="w-3 h-3" viewBox="0 0 10 10" fill="currentColor">
+                        <path d="M1.5 1.5L8.5 8.5M8.5 1.5L1.5 8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </span>
+        </div>
+
+        <!-- Bottom row: Toggle + Help link (shown when keyword_message is selected) -->
+        <div v-if="selectedAction === 'keyword_message'" class="mt-3 flex items-center justify-between">
+            <NodeToggle
+                v-model="exactMatch"
+                label="Coincidencia exacta"
+            />
+            <a
+                href="#"
+                class="node-text-xs hover:underline"
+                style="color: var(--color-fb-text-link);"
+                @click.prevent="openHelp"
+                @mousedown.stop
+            >
+                ¿Cómo funciona?
+            </a>
+        </div>
     </BaseNode>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, watch } from 'vue';
+import { useNode } from '@vue-flow/core';
 import BaseNode from './BaseNode.vue';
-import { NodeDropdown } from './shared';
+import { NodeDropdown, NodeInput, NodeToggle } from './shared';
 import { TriggerIcon } from './icons';
 
-const selectedAction = ref('');
+// Vue Flow's useNode provides id for event emission
+const { id } = useNode();
 
+// State
+const selectedAction = ref('');
+const keyword = ref('');
+const keywords = ref([]);
+const exactMatch = ref(false);
+
+// Emit DOM events for Alpine/Livewire bridge
+const emitDomEvent = (name, detail) => {
+    const el = document.getElementById('flow-canvas');
+    if (el) {
+        el.dispatchEvent(new CustomEvent(name, { detail }));
+    }
+};
+
+// Watch for changes and emit to parent
+watch([selectedAction, keywords, exactMatch], () => {
+    emitDomEvent('node-data-updated', {
+        nodeId: id,
+        data: {
+            action: selectedAction.value,
+            keywords: keywords.value,
+            exactMatch: exactMatch.value,
+        },
+    });
+}, { deep: true });
+
+// Dropdown sections for trigger types
 const dropdownSections = [
     {
         label: 'General',
@@ -44,6 +123,20 @@ const dropdownSections = [
     },
 ];
 
+// Show keyword input for keyword_message and regex triggers
+const showKeywordInput = computed(() => {
+    return ['keyword_message', 'regex'].includes(selectedAction.value);
+});
+
+// Dynamic placeholder based on trigger type
+const keywordPlaceholder = computed(() => {
+    if (selectedAction.value === 'regex') {
+        return 'Escribe una expresión regular';
+    }
+    return 'Escribe una palabra, por ej: hola';
+});
+
+// Node configuration for BaseNode
 const nodeConfig = {
     header: {
         iconColor: 'var(--color-fb-node-trigger)',
@@ -59,5 +152,22 @@ const nodeConfig = {
         input: true,
         output: true,
     },
+};
+
+// Actions
+const addKeyword = () => {
+    const trimmed = keyword.value.trim();
+    if (trimmed && !keywords.value.includes(trimmed)) {
+        keywords.value.push(trimmed);
+        keyword.value = '';
+    }
+};
+
+const removeKeyword = (keywordToRemove) => {
+    keywords.value = keywords.value.filter(kw => kw !== keywordToRemove);
+};
+
+const openHelp = () => {
+    emitDomEvent('open-help', { topic: 'trigger-exact-match' });
 };
 </script>

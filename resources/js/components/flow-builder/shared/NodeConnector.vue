@@ -3,6 +3,7 @@
         :id="id"
         :type="type"
         :position="position"
+        :connectable="true"
         class="!relative !transform-none"
         :class="{ 'connected-handle': connected }"
         :style="handleStyles"

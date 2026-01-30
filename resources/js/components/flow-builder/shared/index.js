@@ -5,4 +5,5 @@ export { default as NodeWrapper } from './NodeWrapper.vue';
 export { default as NodeTooltip } from './NodeTooltip.vue';
 export { default as NodeInput } from './NodeInput.vue';
 export { default as NodeDropdown } from './NodeDropdown.vue';
+export { default as NodeToggle } from './NodeToggle.vue';
 export { default as ChannelDropdown } from './ChannelDropdown.vue';

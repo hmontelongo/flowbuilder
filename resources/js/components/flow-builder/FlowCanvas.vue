@@ -17,6 +17,7 @@
             :edges-selectable="true"
             :nodes-selectable="true"
             :multi-selection-key-code="['Shift']"
+            :is-valid-connection="isValidConnection"
             fit-view-on-init
             :fit-view-options="{ padding: 0.8, maxZoom: 0.5 }"
             @node-drag-start="onNodeDragStart"
@@ -452,6 +453,12 @@ const onEdgesChange = (changes) => {
         }
     });
 };
+
+// Connection validation - determines if a connection can be made
+const isValidConnection = (connection) => {
+    // Only block self-connections for now
+    return connection.source !== connection.target;
+};
 </script>
 
 <style>
@@ -488,14 +495,15 @@ const onEdgesChange = (changes) => {
 .vue-flow .vue-flow__handle {
     width: 8px !important;
     height: 8px !important;
-    background: white !important;
-    border: 1px solid #3866ff !important;
+    background: white;
+    border: 1px solid #3866ff;
     border-radius: 4px !important;
     pointer-events: all;
+    transition: all 0.15s ease;
 }
 
 .vue-flow .vue-flow__handle:hover {
-    background: #eff6ff !important;
+    background: #eff6ff;
 }
 
 /* Edge styling */
@@ -514,5 +522,70 @@ const onEdgesChange = (changes) => {
 .vue-flow .vue-flow__edge:hover .vue-flow__edge-path {
     stroke: #6b7280;
     cursor: pointer;
+}
+
+/* Connection line styling (line being drawn) */
+.vue-flow .vue-flow__connection-line {
+    stroke: #3866ff;
+    stroke-width: 2;
+}
+
+/* Handle states during connection - support both old and new class names */
+/* Base handle is 8px, so we offset by half the size increase to keep centered */
+
+/* When dragging a connection line (connecting state) - grows to 10px, offset by -1px */
+.vue-flow .vue-flow__handle.connecting,
+.vue-flow .vue-flow__handle.vue-flow__handle-connecting {
+    width: 10px !important;
+    height: 10px !important;
+    margin: -1px !important;
+    background: #fef3c7 !important;
+    border-color: #f59e0b !important;
+    border-width: 2px !important;
+    border-radius: 50% !important;
+}
+
+/* Valid connection target - grows to 12px, offset by -2px */
+.vue-flow .vue-flow__handle.valid,
+.vue-flow .vue-flow__handle.vue-flow__handle-valid {
+    width: 12px !important;
+    height: 12px !important;
+    margin: -2px !important;
+    background: #dcfce7 !important;
+    border-color: #22c55e !important;
+    border-width: 2px !important;
+    border-radius: 50% !important;
+    animation: pulse-valid 0.8s ease-in-out infinite;
+}
+
+/* Invalid connection - grows to 10px, offset by -1px */
+.vue-flow .vue-flow__handle.connecting:not(.valid):not(.vue-flow__handle-valid),
+.vue-flow .vue-flow__handle.vue-flow__handle-connecting:not(.valid):not(.vue-flow__handle-valid) {
+    width: 10px !important;
+    height: 10px !important;
+    margin: -1px !important;
+    background: #fee2e2 !important;
+    border-color: #ef4444 !important;
+    border-width: 2px !important;
+    border-radius: 50% !important;
+    animation: pulse-invalid 0.5s ease-in-out infinite;
+}
+
+@keyframes pulse-valid {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+    }
+}
+
+@keyframes pulse-invalid {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+    }
+    50% {
+        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0);
+    }
 }
 </style>
