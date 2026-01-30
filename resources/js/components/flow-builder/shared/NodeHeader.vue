@@ -99,7 +99,7 @@ const props = defineProps({
     },
     headerWidth: {
         type: String,
-        default: '308px',
+        default: '300px',
     },
     chipSize: {
         type: Number,

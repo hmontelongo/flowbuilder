@@ -87,13 +87,15 @@
 
             <!-- Buttons list (each button is an output - blue border indicates output) -->
             <div v-if="buttons.length > 0" class="flex flex-col gap-1">
-                <OutputButtonInput
+                <ButtonInput
                     v-for="(btn, idx) in buttons"
                     :key="btn.id"
                     v-model="btn.title"
+                    :button-id="btn.id"
                     :index="idx"
                     :placeholder="`Botón ${idx + 1}`"
                     :max-length="20"
+                    variant="output"
                     @delete="deleteButton(idx)"
                     @reorder="reorderButtons"
                 />
@@ -157,6 +159,7 @@
             <!-- Button title with launch icon (blue border indicates output) -->
             <OutputNodeInput
                 v-model="ctaButtonText"
+                :button-id="ctaButtonId"
                 placeholder="Título del botón"
             >
                 <template #leftIcon>
@@ -217,7 +220,7 @@
 
 <script setup>
 import { ref, computed, markRaw, inject, watch, onMounted, onUnmounted } from 'vue';
-import { NodeInput, TextToolbar, MessageOptionsBar, ToggleButtonGroup, ToggleIconButton, FileUploadBox, ButtonInput, AddButtonCounter, OutputButtonInput, OutputNodeInput } from './shared';
+import { NodeInput, TextToolbar, MessageOptionsBar, ToggleButtonGroup, ToggleIconButton, FileUploadBox, ButtonInput, AddButtonCounter, OutputNodeInput } from './shared';
 import { FooterIcon, LaunchIcon, LinkMessageIcon, AttachmentIcon, HeaderTextIcon } from './icons';
 
 const props = defineProps({

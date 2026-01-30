@@ -1,7 +1,8 @@
 <template>
     <div
+        ref="buttonEl"
         class="button-input"
-        :class="{ 'is-dragging': isDragging }"
+        :class="[variantClass, { 'is-dragging': isDragging }]"
         draggable="true"
         @dragstart="onDragStart"
         @dragend="onDragEnd"
@@ -54,7 +55,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, inject, onMounted, onUnmounted, watch } from 'vue';
 
 const props = defineProps({
     modelValue: {
@@ -73,11 +74,49 @@ const props = defineProps({
         type: Number,
         required: true,
     },
+    buttonId: {
+        type: String,
+        default: null,
+    },
+    variant: {
+        type: String,
+        default: 'input', // 'input' or 'output'
+        validator: (v) => ['input', 'output'].includes(v),
+    },
 });
 
 const emit = defineEmits(['update:modelValue', 'delete', 'reorder']);
 
+const buttonEl = ref(null);
 const isDragging = ref(false);
+
+// Variant class for styling
+const variantClass = computed(() => `variant-${props.variant}`);
+
+// Register element ref with parent for position calculations (only for output variant with buttonId)
+const buttonElementRegistry = inject('buttonElementRegistry', null);
+
+onMounted(() => {
+    if (buttonElementRegistry && props.buttonId && buttonEl.value) {
+        buttonElementRegistry.register(props.buttonId, buttonEl.value);
+    }
+});
+
+onUnmounted(() => {
+    if (buttonElementRegistry && props.buttonId) {
+        buttonElementRegistry.unregister(props.buttonId);
+    }
+});
+
+// Update registration if buttonId changes
+watch(() => props.buttonId, (newId, oldId) => {
+    if (buttonElementRegistry) {
+        if (oldId) buttonElementRegistry.unregister(oldId);
+        if (newId && buttonEl.value) {
+            buttonElementRegistry.register(newId, buttonEl.value);
+        }
+    }
+});
 
 const remainingChars = computed(() => props.maxLength - props.modelValue.length);
 
@@ -106,14 +145,27 @@ const onDrop = (e) => {
     align-items: center;
     gap: 4px;
     padding: 4px;
-    border: 1px solid var(--color-fb-input-border);
     border-radius: 4px;
     background-color: white;
-    transition: border-color 0.15s ease, opacity 0.15s ease;
+    transition: border-color 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
 }
 
-.button-input:focus-within {
+/* Input variant - standard input styling */
+.button-input.variant-input {
+    border: 1px solid var(--color-fb-input-border);
+}
+
+.button-input.variant-input:focus-within {
     border-color: var(--color-fb-input-border-focus);
+}
+
+/* Output variant - edit/connector styling (blue border) */
+.button-input.variant-output {
+    border: 1px solid var(--color-fb-node-border-edit);
+}
+
+.button-input.variant-output:focus-within {
+    box-shadow: 0 0 0 1px var(--color-fb-node-border-edit);
 }
 
 .button-input.is-dragging {

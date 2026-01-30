@@ -65,10 +65,25 @@ const props = defineProps({
 // Vue Flow composable - use built-in intersection detection
 const { fitView, viewport, getIntersectingNodes, updateNode } = useVueFlow();
 
-// Node dimensions for placement calculations
-const NODE_WIDTH = 320;
-const NODE_HEIGHT = 160;
+// Default node dimensions (matching NodeCard defaults)
+const DEFAULT_NODE_WIDTH = 300;
+const DEFAULT_NODE_HEIGHT = 160;
 const NODE_GAP = 20;
+
+// Get actual node dimensions from DOM, with fallback to defaults
+const getNodeDimensions = () => {
+    // Try to measure an existing node in the DOM
+    const nodeElement = document.querySelector('.vue-flow__node .node-card-wrapper');
+    if (nodeElement) {
+        const rect = nodeElement.getBoundingClientRect();
+        const zoom = viewport.value.zoom || 1;
+        return {
+            width: rect.width / zoom,
+            height: rect.height / zoom,
+        };
+    }
+    return { width: DEFAULT_NODE_WIDTH, height: DEFAULT_NODE_HEIGHT };
+};
 
 // Store original position before drag (for snap-back on collision)
 const dragStartPosition = ref(null);
@@ -81,6 +96,7 @@ const hasIntersection = (nodeId) => {
 
 // Simple collision check for position-based checks (add/duplicate)
 const checkPositionCollision = (position, excludeNodeId = null) => {
+    const { width: NODE_WIDTH, height: NODE_HEIGHT } = getNodeDimensions();
     return nodes.value.some(node => {
         if (node.id === excludeNodeId) return false;
         return !(
@@ -94,6 +110,7 @@ const checkPositionCollision = (position, excludeNodeId = null) => {
 
 // Find next free position (grid-like, predictable)
 const findNextFreePosition = (baseX, baseY) => {
+    const { width: NODE_WIDTH, height: NODE_HEIGHT } = getNodeDimensions();
     let position = { x: baseX, y: baseY };
 
     if (!checkPositionCollision(position)) {

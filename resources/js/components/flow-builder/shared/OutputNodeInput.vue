@@ -1,5 +1,5 @@
 <template>
-    <div class="output-node-input flex items-center gap-2">
+    <div ref="inputEl" class="output-node-input flex items-center gap-2">
         <!-- Left icon slot -->
         <slot name="leftIcon" />
         <input
@@ -16,7 +16,9 @@
 </template>
 
 <script setup>
-defineProps({
+import { ref, inject, onMounted, onUnmounted, watch } from 'vue';
+
+const props = defineProps({
     modelValue: {
         type: String,
         default: '',
@@ -25,9 +27,40 @@ defineProps({
         type: String,
         default: '',
     },
+    buttonId: {
+        type: String,
+        default: null,
+    },
 });
 
 defineEmits(['update:modelValue', 'action']);
+
+const inputEl = ref(null);
+
+// Register element ref with parent for position calculations
+const buttonElementRegistry = inject('buttonElementRegistry', null);
+
+onMounted(() => {
+    if (buttonElementRegistry && props.buttonId && inputEl.value) {
+        buttonElementRegistry.register(props.buttonId, inputEl.value);
+    }
+});
+
+onUnmounted(() => {
+    if (buttonElementRegistry && props.buttonId) {
+        buttonElementRegistry.unregister(props.buttonId);
+    }
+});
+
+// Update registration if buttonId changes
+watch(() => props.buttonId, (newId, oldId) => {
+    if (buttonElementRegistry) {
+        if (oldId) buttonElementRegistry.unregister(oldId);
+        if (newId && inputEl.value) {
+            buttonElementRegistry.register(newId, inputEl.value);
+        }
+    }
+});
 </script>
 
 <style scoped>

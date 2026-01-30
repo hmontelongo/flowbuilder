@@ -1,12 +1,14 @@
 <template>
-    <div class="relative inline-block" @click.stop="show = !show">
+    <div ref="triggerRef" class="relative inline-block" @click.stop="toggleTooltip">
         <slot />
 
-        <!-- Tooltip positioned ABOVE with arrow pointing down -->
+        <!-- Tooltip positioned dynamically based on viewport boundaries -->
         <Transition name="tooltip">
             <div
                 v-if="show && (title || description)"
-                class="absolute z-50 flex flex-col"
+                ref="tooltipRef"
+                class="absolute z-50 flex"
+                :class="tooltipContainerClass"
                 :style="positionStyles"
                 @click.stop
             >
@@ -42,9 +44,13 @@
                     </div>
                 </div>
 
-                <!-- Arrow pointing down, centered with icon (12px from left) -->
-                <svg class="arrow-svg" width="28" height="6" viewBox="0 0 28 6">
+                <!-- Arrow pointing down (when tooltip above) -->
+                <svg v-if="placement === 'top'" class="arrow-svg arrow-down" width="28" height="6" viewBox="0 0 28 6">
                     <path d="M14 6L7 0H21L14 6Z" fill="#e5e7eb"/>
+                </svg>
+                <!-- Arrow pointing up (when tooltip below) -->
+                <svg v-else class="arrow-svg arrow-up" width="28" height="6" viewBox="0 0 28 6">
+                    <path d="M14 0L21 6H7L14 0Z" fill="#e5e7eb"/>
                 </svg>
             </div>
         </Transition>
@@ -52,7 +58,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 
 const props = defineProps({
     title: {
@@ -74,12 +80,78 @@ const props = defineProps({
 });
 
 const show = ref(false);
+const triggerRef = ref(null);
+const tooltipRef = ref(null);
+const placement = ref('top'); // 'top' or 'bottom'
+const horizontalOffset = ref(0); // Offset to keep tooltip in viewport
 
-// Position tooltip above the trigger, aligned to start
-const positionStyles = computed(() => ({
-    bottom: '100%',
-    left: '0',
-    marginBottom: '2px',
+const TOOLTIP_WIDTH = 240;
+const TOOLTIP_HEIGHT_ESTIMATE = 100; // Approximate, will be measured
+const VIEWPORT_MARGIN = 8;
+
+const toggleTooltip = () => {
+    if (show.value) {
+        show.value = false;
+    } else {
+        show.value = true;
+        nextTick(updatePlacement);
+    }
+};
+
+const updatePlacement = () => {
+    if (!triggerRef.value) return;
+
+    const triggerRect = triggerRef.value.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // Check vertical placement
+    const spaceAbove = triggerRect.top;
+    const spaceBelow = viewportHeight - triggerRect.bottom;
+
+    // Prefer above, but use below if not enough space
+    if (spaceAbove < TOOLTIP_HEIGHT_ESTIMATE + VIEWPORT_MARGIN && spaceBelow > spaceAbove) {
+        placement.value = 'bottom';
+    } else {
+        placement.value = 'top';
+    }
+
+    // Check horizontal overflow
+    const tooltipLeft = triggerRect.left;
+    const tooltipRight = tooltipLeft + TOOLTIP_WIDTH;
+
+    if (tooltipRight > viewportWidth - VIEWPORT_MARGIN) {
+        // Would overflow right - shift left
+        horizontalOffset.value = viewportWidth - VIEWPORT_MARGIN - tooltipRight;
+    } else if (tooltipLeft < VIEWPORT_MARGIN) {
+        // Would overflow left - shift right
+        horizontalOffset.value = VIEWPORT_MARGIN - tooltipLeft;
+    } else {
+        horizontalOffset.value = 0;
+    }
+};
+
+// Position styles based on calculated placement
+const positionStyles = computed(() => {
+    const styles = {
+        left: `${horizontalOffset.value}px`,
+    };
+
+    if (placement.value === 'top') {
+        styles.bottom = '100%';
+        styles.marginBottom = '2px';
+    } else {
+        styles.top = '100%';
+        styles.marginTop = '2px';
+    }
+
+    return styles;
+});
+
+// Container class for flex direction based on placement
+const tooltipContainerClass = computed(() => ({
+    'flex-col': placement.value === 'top',
+    'flex-col-reverse': placement.value === 'bottom',
 }));
 
 // Close tooltip when clicking outside
@@ -112,5 +184,14 @@ onUnmounted(() => {
 /* Center arrow with icon (icon is 24px, center at 12px) */
 .arrow-svg {
     margin-left: -2px; /* 12px (icon center) - 14px (arrow center) = -2px */
+    flex-shrink: 0;
+}
+
+.arrow-down {
+    order: 2;
+}
+
+.arrow-up {
+    order: -1;
 }
 </style>

@@ -5,6 +5,7 @@
             <NodeHeader
                 :label="node.data?.label ?? 'Node'"
                 :icon-color="config.header.iconColor"
+                :header-width="cardWidth"
                 :state="nodeState"
                 :show-delete="true"
                 :show-duplicate="true"
@@ -28,7 +29,7 @@
                 :state="nodeState"
                 :padding="config.card?.padding ?? '8px'"
                 :border-radius="config.card?.borderRadius ?? '8px'"
-                :width="config.card?.width ?? '300px'"
+                :width="cardWidth"
             >
                 <template v-if="hasInputConnector" #input-connector>
                     <NodeConnector
@@ -87,6 +88,7 @@ const isOutputConnected = computed(() =>
 );
 
 // For nodes with multiple output handles (like WaitNode)
+// Returns a computed ref for reactivity - callers must access .value
 const isHandleConnected = (handleId) => computed(() =>
     connectedEdges.value.some(edge =>
         (edge.source === id && edge.sourceHandle === handleId) ||
@@ -96,6 +98,9 @@ const isHandleConnected = (handleId) => computed(() =>
 
 // Node state derived from data
 const nodeState = computed(() => node.data?.state ?? { mode: 'normal' });
+
+// Card width (shared between header and card for consistency)
+const cardWidth = computed(() => props.config.card?.width ?? '300px');
 
 // Connector configuration helpers
 const hasInputConnector = computed(() => !!props.config.connectors?.input);

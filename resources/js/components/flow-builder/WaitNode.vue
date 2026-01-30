@@ -12,11 +12,11 @@
                 side="right"
                 variant="error"
                 :connected="isHandleConnected('no-response').value"
-                :top="156"
+                :top="noResponseConnectorTop"
             />
         </template>
 
-        <div class="flex flex-col items-end gap-4 w-full">
+        <div ref="contentRef" class="flex flex-col items-end gap-4 w-full">
             <!-- Timer section -->
             <div class="flex flex-col gap-2 w-full">
                 <div class="flex items-center gap-2">
@@ -64,13 +64,13 @@
             </div>
 
             <!-- No response label -->
-            <span class="node-text-xs node-text-placeholder w-full text-right uppercase">SI NO SE RECIBE RESPUESTA</span>
+            <span ref="noResponseLabelRef" class="node-text-xs node-text-placeholder w-full text-right uppercase">SI NO SE RECIBE RESPUESTA</span>
         </div>
     </BaseNode>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import BaseNode from './BaseNode.vue';
 import { PositionedConnector } from './shared';
 import { WaitIcon } from './icons';
@@ -78,6 +78,59 @@ import { WaitIcon } from './icons';
 const waitTime = ref(10);
 const timeUnit = ref('Segundos');
 const fallbackMessage = ref('');
+
+// Refs for DOM measurement
+const contentRef = ref(null);
+const noResponseLabelRef = ref(null);
+const noResponseConnectorTop = ref(50); // Default fallback
+
+// ResizeObserver for layout changes
+let resizeObserver = null;
+let isUnmounted = false;
+
+const recalculateConnectorPosition = () => {
+    if (isUnmounted || !contentRef.value || !noResponseLabelRef.value) return;
+
+    const cardWrapper = contentRef.value.closest('.node-card-wrapper');
+    if (!cardWrapper) return;
+
+    // Calculate position using offsetTop chain
+    let top = noResponseLabelRef.value.offsetTop + (noResponseLabelRef.value.offsetHeight / 2);
+    let el = noResponseLabelRef.value.offsetParent;
+
+    while (el && el !== cardWrapper && !el.classList?.contains('node-card-wrapper')) {
+        top += el.offsetTop;
+        el = el.offsetParent;
+    }
+
+    noResponseConnectorTop.value = top;
+};
+
+// Setup ResizeObserver when content is available
+watch(contentRef, (container) => {
+    if (resizeObserver) {
+        resizeObserver.disconnect();
+        resizeObserver = null;
+    }
+    if (container && !isUnmounted) {
+        resizeObserver = new ResizeObserver(() => {
+            if (!isUnmounted) {
+                recalculateConnectorPosition();
+            }
+        });
+        resizeObserver.observe(container);
+        // Initial calculation after mount
+        setTimeout(recalculateConnectorPosition, 10);
+    }
+}, { immediate: true });
+
+onUnmounted(() => {
+    isUnmounted = true;
+    if (resizeObserver) {
+        resizeObserver.disconnect();
+        resizeObserver = null;
+    }
+});
 
 const nodeConfig = {
     header: {

@@ -15,6 +15,5 @@ export { default as ToggleIconButton } from './ToggleIconButton.vue';
 export { default as FileUploadBox } from './FileUploadBox.vue';
 export { default as ButtonInput } from './ButtonInput.vue';
 export { default as AddButtonCounter } from './AddButtonCounter.vue';
-export { default as OutputButtonInput } from './OutputButtonInput.vue';
 export { default as OutputNodeInput } from './OutputNodeInput.vue';
 export { default as PositionedConnector } from './PositionedConnector.vue';

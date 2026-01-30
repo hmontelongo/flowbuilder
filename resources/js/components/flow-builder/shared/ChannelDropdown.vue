@@ -89,8 +89,8 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { WhatsAppIcon, WebchatIcon, PlusIcon } from '../icons';
 
-// Track when the dropdown was opened to prevent immediate close from the same click event
-let openedAt = 0;
+// Flag to ignore click events during the same tick as opening
+let ignoreNextClick = false;
 
 const props = defineProps({
     modelValue: {
@@ -117,14 +117,14 @@ const triggerRef = ref(null);
 const isOpen = ref(false);
 const searchQuery = ref('');
 const searchInput = ref(null);
-const dropdownPosition = ref({ top: 0, left: 0, width: 0 });
+const dropdownPosition = ref({ top: 0, left: 0, width: 0, maxHeight: 280 });
 
 const dropdownStyle = computed(() => ({
     top: `${dropdownPosition.value.top}px`,
     left: `${dropdownPosition.value.left}px`,
     width: `${dropdownPosition.value.width}px`,
     zIndex: 99999,
-    maxHeight: '280px',
+    maxHeight: `${dropdownPosition.value.maxHeight}px`,
     overflowY: 'auto',
     backgroundColor: 'var(--color-fb-neutral-50)',
     boxShadow: 'var(--fb-shadow-dropdown)',
@@ -133,10 +133,18 @@ const dropdownStyle = computed(() => ({
 const updatePosition = () => {
     if (triggerRef.value) {
         const rect = triggerRef.value.getBoundingClientRect();
+        const top = rect.bottom + 4;
+        // Calculate available space from dropdown top to viewport bottom (with 16px margin)
+        const viewportHeight = window.innerHeight;
+        const availableHeight = viewportHeight - top - 16;
+        // Use smaller of desired max (280) or available space, with minimum of 100
+        const maxHeight = Math.max(100, Math.min(280, availableHeight));
+
         dropdownPosition.value = {
-            top: rect.bottom + 4,
+            top,
             left: rect.left,
             width: rect.width,
+            maxHeight,
         };
     }
 };
@@ -182,7 +190,9 @@ const openDropdown = () => {
     if (!isOpen.value) {
         updatePosition();
         isOpen.value = true;
-        openedAt = Date.now();
+        // Ignore any click events that fire during this event cycle
+        ignoreNextClick = true;
+        setTimeout(() => { ignoreNextClick = false; }, 0);
         emit('open');
         nextTick(() => {
             searchInput.value?.focus();
@@ -204,9 +214,9 @@ const selectChannel = (channel) => {
 };
 
 const handleClickOutside = (event) => {
-    // Ignore clicks within 100ms of opening to prevent race condition
-    // when clicking on SelectedChannelDisplay to edit
-    if (isOpen.value && Date.now() - openedAt > 100) {
+    // Ignore clicks that happen in the same event cycle as opening
+    // (prevents race condition when clicking SelectedChannelDisplay to edit)
+    if (isOpen.value && !ignoreNextClick) {
         closeDropdown();
     }
 };
