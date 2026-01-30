@@ -53,6 +53,10 @@
                     this.$el.addEventListener('node-added', (e) => {
                         $wire.addNode(e.detail.nodeId, e.detail.type, e.detail.name, e.detail.x, e.detail.y);
                     });
+
+                    this.$el.addEventListener('node-data-updated', (e) => {
+                        $wire.updateNodeData(e.detail.nodeId, e.detail.data);
+                    });
                 }
             }"
         ></div>

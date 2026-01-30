@@ -78,7 +78,23 @@ class Canvas extends Component
             'name' => $name,
             'x' => $x,
             'y' => $y,
+            'data' => [],
         ];
+    }
+
+    /**
+     * Update the data payload for a specific node.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function updateNodeData(string $nodeId, array $data): void
+    {
+        foreach ($this->nodes as $index => $node) {
+            if ($node['id'] === $nodeId) {
+                $this->nodes[$index]['data'] = array_merge($node['data'] ?? [], $data);
+                break;
+            }
+        }
     }
 
     public function render()
