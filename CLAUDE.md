@@ -43,6 +43,7 @@ This project has domain-specific skills available. You MUST activate the relevan
 
 - Stick to existing directory structure; don't create new base folders without approval.
 - Do not change the application's dependencies without approval.
+- See `NODES.md` for the Flow Builder node architecture and how to create new nodes.
 
 ## Frontend Bundling
 

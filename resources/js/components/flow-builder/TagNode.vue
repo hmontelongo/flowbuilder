@@ -22,13 +22,35 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
+import { useNode } from '@vue-flow/core';
 import BaseNode from './BaseNode.vue';
 import { NodeInput, NodeDropdown } from './shared';
 import { TagIcon } from './icons';
 
+const { id } = useNode();
+
 const tagName = ref('');
 const selectedScope = ref('this_chatbot');
+
+// Emit DOM events for Alpine/Livewire bridge
+const emitDomEvent = (name, detail) => {
+    const el = document.getElementById('flow-canvas');
+    if (el) {
+        el.dispatchEvent(new CustomEvent(name, { detail }));
+    }
+};
+
+// Watch for changes and emit to parent
+watch([tagName, selectedScope], () => {
+    emitDomEvent('node-data-updated', {
+        nodeId: id,
+        data: {
+            tagName: tagName.value,
+            scope: selectedScope.value,
+        },
+    });
+});
 
 const scopeSections = [
     {

@@ -76,7 +76,7 @@
                 @dragleave="handleDragLeave"
                 @drop="handleDrop(index)"
             >
-                <MessageContent :message="message" />
+                <MessageContent :message="message" @update:message="handleMessageUpdate" />
             </MessageItemContainer>
 
             <!-- Bottom add zone -->
@@ -113,10 +113,21 @@
 
 <script setup>
 import { ref, reactive, computed, markRaw, provide, onMounted, onUnmounted, nextTick, watch } from 'vue';
+import { useNode } from '@vue-flow/core';
 import BaseNode from './BaseNode.vue';
 import MessageContent from './MessageContent.vue';
 import { MessageItemContainer, PositionedConnector } from './shared';
 import { MessageIcon, TextMessageIcon, AttachmentIcon, ButtonMessageIcon, LinkMessageIcon, LocationMessageIcon, ListMessageIcon } from './icons';
+
+const { id } = useNode();
+
+// Emit DOM events for Alpine/Livewire bridge
+const emitDomEvent = (name, detail) => {
+    const el = document.getElementById('flow-canvas');
+    if (el) {
+        el.dispatchEvent(new CustomEvent(name, { detail }));
+    }
+};
 
 // Ref to the messages container for position calculations
 const messagesContainerRef = ref(null);
@@ -252,6 +263,20 @@ const messageTypes = [
 // Messages state
 const messages = ref([]);
 
+// Watch for message changes and emit to parent
+watch(messages, (newMessages) => {
+    emitDomEvent('node-data-updated', {
+        nodeId: id,
+        data: {
+            messages: newMessages.map(m => ({
+                id: m.id,
+                type: m.type,
+                content: m.content,
+            })),
+        },
+    });
+}, { deep: true });
+
 // Type picker state
 const activeAddPosition = ref(null);
 
@@ -291,6 +316,14 @@ const insertMessageOfType = (index, typeId) => {
 
 const removeMessage = (index) => {
     messages.value.splice(index, 1);
+};
+
+// Handle message updates from MessageContent
+const handleMessageUpdate = (updatedMessage) => {
+    const index = messages.value.findIndex(m => m.id === updatedMessage.id);
+    if (index !== -1) {
+        messages.value[index] = updatedMessage;
+    }
 };
 
 // Drag and drop handlers

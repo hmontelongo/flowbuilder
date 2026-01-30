@@ -70,14 +70,37 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, onUnmounted, watch } from 'vue';
+import { useNode } from '@vue-flow/core';
 import BaseNode from './BaseNode.vue';
 import { PositionedConnector } from './shared';
 import { WaitIcon } from './icons';
 
+const { id } = useNode();
+
 const waitTime = ref(10);
 const timeUnit = ref('Segundos');
 const fallbackMessage = ref('');
+
+// Emit DOM events for Alpine/Livewire bridge
+const emitDomEvent = (name, detail) => {
+    const el = document.getElementById('flow-canvas');
+    if (el) {
+        el.dispatchEvent(new CustomEvent(name, { detail }));
+    }
+};
+
+// Watch for changes and emit to parent
+watch([waitTime, timeUnit, fallbackMessage], () => {
+    emitDomEvent('node-data-updated', {
+        nodeId: id,
+        data: {
+            waitTime: waitTime.value,
+            timeUnit: timeUnit.value,
+            fallbackMessage: fallbackMessage.value,
+        },
+    });
+});
 
 // Refs for DOM measurement
 const contentRef = ref(null);

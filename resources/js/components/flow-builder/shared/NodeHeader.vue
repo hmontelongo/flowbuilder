@@ -1,6 +1,6 @@
 <template>
     <div class="group flex items-center gap-2 px-1" :style="{ width: headerWidth }">
-        <!-- Icon chip with error indicator and optional tooltip -->
+        <!-- Icon chip with optional tooltip -->
         <NodeTooltip
             v-if="tooltip"
             :title="tooltip.title"
@@ -8,49 +8,29 @@
             :link-text="tooltip.linkText"
             :link-url="tooltip.linkUrl"
         >
-            <div class="relative shrink-0">
-                <div
-                    class="icon-chip flex items-center justify-center cursor-pointer transition-all duration-150"
-                    :style="{
-                        width: `${chipSize}px`,
-                        height: `${chipSize}px`,
-                        backgroundColor: iconColor,
-                        borderRadius: `${chipRadius}px`,
-                        padding: '4px',
-                    }"
-                >
-                    <slot name="icon" />
-                </div>
-                <!-- Error indicator dot -->
-                <div
-                    v-if="state.mode === 'error'"
-                    class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-white"
-                    :style="{ backgroundColor: errorIndicatorColor }"
-                ></div>
-            </div>
+            <IconChip
+                :color="iconColor"
+                :size="chipSize"
+                :radius="chipRadius"
+                :clickable="true"
+                :show-error="state.mode === 'error'"
+                :error-level="state.errorLevel"
+            >
+                <slot name="icon" />
+            </IconChip>
         </NodeTooltip>
 
         <!-- Icon chip without tooltip -->
-        <div v-else class="relative shrink-0">
-            <div
-                class="flex items-center justify-center"
-                :style="{
-                    width: `${chipSize}px`,
-                    height: `${chipSize}px`,
-                    backgroundColor: iconColor,
-                    borderRadius: `${chipRadius}px`,
-                    padding: '4px',
-                }"
-            >
-                <slot name="icon" />
-            </div>
-            <!-- Error indicator dot -->
-            <div
-                v-if="state.mode === 'error'"
-                class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-white"
-                :style="{ backgroundColor: errorIndicatorColor }"
-            ></div>
-        </div>
+        <IconChip
+            v-else
+            :color="iconColor"
+            :size="chipSize"
+            :radius="chipRadius"
+            :show-error="state.mode === 'error'"
+            :error-level="state.errorLevel"
+        >
+            <slot name="icon" />
+        </IconChip>
 
         <span class="node-text-sm flex-1 font-medium text-left overflow-hidden text-ellipsis whitespace-nowrap">{{ label }}</span>
         <!-- Action buttons: Duplicate + Delete (visible on hover) -->
@@ -85,8 +65,8 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
 import NodeTooltip from './NodeTooltip.vue';
+import IconChip from './IconChip.vue';
 
 const props = defineProps({
     label: {
@@ -129,18 +109,5 @@ const props = defineProps({
 });
 
 defineEmits(['delete', 'duplicate']);
-
-const errorIndicatorColor = computed(() => {
-    return props.state.errorLevel === 'error'
-        ? 'var(--color-fb-node-border-error)'
-        : 'var(--color-fb-node-border-warning)';
-});
 </script>
 
-<style scoped>
-/* Icon chip hover effect to indicate it's clickable */
-.icon-chip:hover {
-    filter: brightness(0.92);
-    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
-}
-</style>

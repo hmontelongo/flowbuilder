@@ -1,6 +1,5 @@
 <template>
-    <NodeWrapper @delete="onDelete" @duplicate="onDuplicate">
-        <div class="base-node flex flex-col items-center gap-2">
+    <div class="base-node flex flex-col items-center gap-2">
             <!-- Header -->
             <NodeHeader
                 :label="node.data?.label ?? 'Node'"
@@ -56,14 +55,13 @@
                 <!-- Main content slot -->
                 <slot />
             </NodeCard>
-        </div>
-    </NodeWrapper>
+    </div>
 </template>
 
 <script setup>
 import { computed, inject } from 'vue';
 import { useNode } from '@vue-flow/core';
-import { NodeWrapper, NodeCard, NodeHeader, NodeConnector } from './shared';
+import { NodeCard, NodeHeader, NodeConnector } from './shared';
 
 const props = defineProps({
     config: {

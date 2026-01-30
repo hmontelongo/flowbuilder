@@ -83,8 +83,8 @@ const placeholder = computed(() => {
     return 'Buscar un canal';
 });
 
-// Node config for BaseNode
-const nodeConfig = computed(() => ({
+// Node config for BaseNode (static - no reactive dependencies)
+const nodeConfig = {
     header: {
         iconColor: 'var(--color-fb-node-canal)',
         icon: CanalIcon,
@@ -99,7 +99,7 @@ const nodeConfig = computed(() => ({
         input: false,
         output: true,
     },
-}));
+};
 
 // Event handlers
 const handleDropdownOpen = () => {

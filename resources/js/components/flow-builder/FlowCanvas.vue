@@ -364,6 +364,8 @@ const deleteNode = (nodeId) => {
 const duplicateNode = (nodeId) => {
     const node = nodes.value.find(n => n.id === nodeId);
     if (node) {
+        const { width: NODE_WIDTH, height: NODE_HEIGHT } = getNodeDimensions();
+
         // Try to place directly to the right of the original
         let position = {
             x: node.position.x + NODE_WIDTH + NODE_GAP,

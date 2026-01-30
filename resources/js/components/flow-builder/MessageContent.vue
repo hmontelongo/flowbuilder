@@ -230,6 +230,8 @@ const props = defineProps({
     },
 });
 
+const emit = defineEmits(['update:message']);
+
 // Inject the output buttons registry from MessageNode
 const outputButtonsRegistry = inject('outputButtonsRegistry', null);
 
@@ -343,6 +345,79 @@ const addListItem = () => {
         listItems.value.push('');
     }
 };
+
+// Serialize message state based on type
+const serializeMessage = () => {
+    const base = { id: props.message.id, type: props.message.type };
+
+    switch (props.message.type) {
+        case 'text':
+            return { ...base, content: { text: content.value } };
+        case 'button':
+            return { ...base, content: {
+                headerType: buttonHeaderType.value,
+                headerText: buttonHeaderText.value,
+                body: buttonBody.value,
+                footerEnabled: buttonFooterEnabled.value,
+                footer: buttonFooter.value,
+                buttons: buttons.value.map(b => ({ id: b.id, title: b.title })),
+            }};
+        case 'link':
+            return { ...base, content: {
+                headerType: ctaHeaderType.value,
+                headerText: ctaHeaderText.value,
+                body: ctaBody.value,
+                footerEnabled: ctaFooterEnabled.value,
+                footer: ctaFooter.value,
+                buttonText: ctaButtonText.value,
+                buttonId: ctaButtonId.value,
+                url: ctaUrl.value,
+            }};
+        case 'location':
+            return { ...base, content: {
+                latitude: latitude.value,
+                longitude: longitude.value,
+                name: locationName.value,
+            }};
+        case 'list':
+            return { ...base, content: {
+                text: content.value,
+                buttonText: listButtonText.value,
+                items: [...listItems.value],
+            }};
+        case 'attachment':
+            return { ...base, content: { fileName: fileName.value } };
+        default:
+            return base;
+    }
+};
+
+// Emit message updates when state changes
+// Group all state refs by message type for watching
+const textState = [content];
+const buttonState = [buttonHeaderType, buttonHeaderText, buttonBody, buttonFooterEnabled, buttonFooter, buttons];
+const linkState = [ctaHeaderType, ctaHeaderText, ctaBody, ctaFooterEnabled, ctaFooter, ctaButtonText, ctaUrl];
+const locationState = [latitude, longitude, locationName];
+const listState = [content, listButtonText, listItems];
+const attachmentState = [fileName];
+
+// Single watcher for all state - emits serialized message on any change
+watch(
+    () => [
+        content.value,
+        buttonHeaderType.value, buttonHeaderText.value, buttonBody.value,
+        buttonFooterEnabled.value, buttonFooter.value, buttons.value,
+        ctaHeaderType.value, ctaHeaderText.value, ctaBody.value,
+        ctaFooterEnabled.value, ctaFooter.value, ctaButtonText.value, ctaUrl.value,
+        latitude.value, longitude.value, locationName.value,
+        listButtonText.value, listItems.value,
+        fileName.value,
+    ],
+    () => {
+        emit('update:message', serializeMessage());
+    },
+    { deep: true }
+);
 </script>
 
 <style scoped>
