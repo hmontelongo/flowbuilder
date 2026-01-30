@@ -10,8 +10,8 @@
                 class="node-text-xs flex-1 text-left min-w-0"
                 :class="{ 'node-text-placeholder': !selectedOption }"
             >{{ selectedOption ? selectedOption.label : placeholder }}</span>
-            <svg class="w-4 h-4 shrink-0" viewBox="0 0 16 16" fill="none">
-                <path d="M4 6L8 10L12 6" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <svg class="w-4 h-4 shrink-0" viewBox="0 0 16 16" fill="none" style="color: var(--color-fb-neutral-700);">
+                <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
         </div>
 

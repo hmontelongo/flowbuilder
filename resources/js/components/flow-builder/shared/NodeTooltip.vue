@@ -1,5 +1,5 @@
 <template>
-    <div class="relative inline-block" @mouseenter="show = true" @mouseleave="show = false">
+    <div class="relative inline-block" @click.stop="show = !show">
         <slot />
 
         <!-- Tooltip positioned ABOVE with arrow pointing down -->
@@ -8,6 +8,7 @@
                 v-if="show && (title || description)"
                 class="absolute z-50 flex flex-col"
                 :style="positionStyles"
+                @click.stop
             >
                 <!-- Tooltip content -->
                 <div
@@ -51,7 +52,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 
 const props = defineProps({
     title: {
@@ -80,6 +81,21 @@ const positionStyles = computed(() => ({
     left: '0',
     marginBottom: '2px',
 }));
+
+// Close tooltip when clicking outside
+const handleClickOutside = () => {
+    if (show.value) {
+        show.value = false;
+    }
+};
+
+onMounted(() => {
+    document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+    document.removeEventListener('click', handleClickOutside);
+});
 </script>
 
 <style scoped>

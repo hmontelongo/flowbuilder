@@ -1,5 +1,5 @@
 <template>
-    <div class="flex items-center gap-2 px-1" :style="{ width: headerWidth }">
+    <div class="group flex items-center gap-2 px-1" :style="{ width: headerWidth }">
         <!-- Icon chip with error indicator and optional tooltip -->
         <NodeTooltip
             v-if="tooltip"
@@ -10,7 +10,7 @@
         >
             <div class="relative shrink-0">
                 <div
-                    class="flex items-center justify-center cursor-help"
+                    class="icon-chip flex items-center justify-center cursor-pointer transition-all duration-150"
                     :style="{
                         width: `${chipSize}px`,
                         height: `${chipSize}px`,
@@ -53,8 +53,8 @@
         </div>
 
         <span class="node-text-sm flex-1 font-medium text-left overflow-hidden text-ellipsis whitespace-nowrap">{{ label }}</span>
-        <!-- Action buttons: Duplicate + Delete -->
-        <div class="flex items-center gap-1 shrink-0">
+        <!-- Action buttons: Duplicate + Delete (visible on hover) -->
+        <div class="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
             <!-- Duplicate button -->
             <button
                 v-if="showDuplicate"
@@ -136,3 +136,11 @@ const errorIndicatorColor = computed(() => {
         : 'var(--color-fb-node-border-warning)';
 });
 </script>
+
+<style scoped>
+/* Icon chip hover effect to indicate it's clickable */
+.icon-chip:hover {
+    filter: brightness(0.92);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
+}
+</style>
