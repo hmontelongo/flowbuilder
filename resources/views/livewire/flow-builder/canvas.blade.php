@@ -29,14 +29,9 @@
                         }));
                     });
 
-                    // Primary sync event - full state sync from Vue Flow (Phase 1 refactor)
+                    // Full state sync from Vue Flow
                     this.$el.addEventListener('sync-flow', (e) => {
                         $wire.syncFlow(e.detail.nodes, e.detail.edges);
-                    });
-
-                    // Legacy: node data updates (will be removed in Phase 2)
-                    this.$el.addEventListener('node-data-updated', (e) => {
-                        $wire.updateNodeData(e.detail.nodeId, e.detail.data);
                     });
                 }
             }"

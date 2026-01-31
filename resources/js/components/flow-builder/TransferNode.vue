@@ -14,7 +14,7 @@
 
 <script setup>
 import { ref, watch } from 'vue';
-import { useNode } from '@vue-flow/core';
+import { useNode, useVueFlow } from '@vue-flow/core';
 import BaseNode from './BaseNode.vue';
 import { NodeInput } from './shared';
 import { TransferIcon } from './icons';
@@ -25,26 +25,17 @@ const props = defineProps({
     data: { type: Object, default: () => ({}) },
 });
 
+// Vue Flow composables
 const { id } = useNode();
+const { updateNodeData } = useVueFlow();
 
 // Initialize from persisted data
 const chatCenterValue = ref(props.data?.chatCenter || '');
 
-// Emit DOM events for Alpine/Livewire bridge
-const emitDomEvent = (name, detail) => {
-    const el = document.getElementById('flow-canvas');
-    if (el) {
-        el.dispatchEvent(new CustomEvent(name, { detail }));
-    }
-};
-
-// Watch for changes and emit to parent
+// Watch for changes and update node data via Vue Flow
 watch(chatCenterValue, () => {
-    emitDomEvent('node-data-updated', {
-        nodeId: id,
-        data: {
-            chatCenter: chatCenterValue.value,
-        },
+    updateNodeData(id, {
+        chatCenter: chatCenterValue.value,
     });
 });
 

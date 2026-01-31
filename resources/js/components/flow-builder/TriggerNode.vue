@@ -64,7 +64,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { useNode } from '@vue-flow/core';
+import { useNode, useVueFlow } from '@vue-flow/core';
 import BaseNode from './BaseNode.vue';
 import { NodeDropdown, NodeInput, NodeToggle } from './shared';
 import { TriggerIcon } from './icons';
@@ -75,8 +75,9 @@ const props = defineProps({
     data: { type: Object, default: () => ({}) },
 });
 
-// Vue Flow's useNode provides id for event emission
+// Vue Flow composables
 const { id } = useNode();
+const { updateNodeData } = useVueFlow();
 
 // State - initialize from props.data (passed by Vue Flow)
 const selectedAction = ref(props.data?.action || '');
@@ -84,23 +85,12 @@ const keyword = ref('');
 const keywords = ref(props.data?.keywords || []);
 const exactMatch = ref(props.data?.exactMatch || false);
 
-// Emit DOM events for Alpine/Livewire bridge
-const emitDomEvent = (name, detail) => {
-    const el = document.getElementById('flow-canvas');
-    if (el) {
-        el.dispatchEvent(new CustomEvent(name, { detail }));
-    }
-};
-
-// Watch for changes and emit to parent
+// Watch for changes and update node data via Vue Flow
 watch([selectedAction, keywords, exactMatch], () => {
-    emitDomEvent('node-data-updated', {
-        nodeId: id,
-        data: {
-            action: selectedAction.value,
-            keywords: keywords.value,
-            exactMatch: exactMatch.value,
-        },
+    updateNodeData(id, {
+        action: selectedAction.value,
+        keywords: keywords.value,
+        exactMatch: exactMatch.value,
     });
 }, { deep: true });
 
@@ -174,6 +164,9 @@ const removeKeyword = (keywordToRemove) => {
 };
 
 const openHelp = () => {
-    emitDomEvent('open-help', { topic: 'trigger-exact-match' });
+    const el = document.getElementById('flow-canvas');
+    if (el) {
+        el.dispatchEvent(new CustomEvent('open-help', { detail: { topic: 'trigger-exact-match' } }));
+    }
 };
 </script>

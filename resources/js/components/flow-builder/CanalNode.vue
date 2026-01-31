@@ -36,7 +36,7 @@
 
 <script setup>
 import { ref, computed, inject, watch } from 'vue';
-import { useNode } from '@vue-flow/core';
+import { useNode, useVueFlow } from '@vue-flow/core';
 import BaseNode from './BaseNode.vue';
 import { ChannelDropdown } from './shared';
 import SelectedChannelDisplay from './SelectedChannelDisplay.vue';
@@ -48,8 +48,9 @@ const props = defineProps({
     data: { type: Object, default: () => ({}) },
 });
 
-// Vue Flow's useNode provides id for event emission
+// Vue Flow composables
 const { id } = useNode();
+const { updateNodeData } = useVueFlow();
 
 // Inject available channels from FlowCanvas
 const availableChannels = inject('availableChannels', ref([
@@ -118,26 +119,17 @@ const handleDropdownClose = () => {
 
 const handleAddChannel = (channelType) => {
     // Emit event for parent to handle (e.g., open modal to create new channel)
-    emitDomEvent('add-channel-request', { nodeId: id, channelType });
-};
-
-// Emit DOM events for Alpine/Livewire bridge
-const emitDomEvent = (name, detail) => {
     const el = document.getElementById('flow-canvas');
     if (el) {
-        el.dispatchEvent(new CustomEvent(name, { detail }));
+        el.dispatchEvent(new CustomEvent('add-channel-request', { detail: { nodeId: id, channelType } }));
     }
 };
 
-// Watch for channel selection changes and emit to Livewire
-// Note: handleDropdownClose() is the ONLY place that sets isEditing = false
+// Watch for channel selection changes and update node data via Vue Flow
 watch(selectedChannelId, (newValue, oldValue) => {
-    // Only emit when selection actually changes
+    // Only update when selection actually changes
     if (newValue && newValue !== oldValue) {
-        emitDomEvent('node-data-updated', {
-            nodeId: id,
-            data: { channelId: newValue },
-        });
+        updateNodeData(id, { channelId: newValue });
     }
 });
 </script>

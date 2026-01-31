@@ -113,7 +113,7 @@
 
 <script setup>
 import { ref, reactive, computed, markRaw, provide, onMounted, onUnmounted, nextTick, watch } from 'vue';
-import { useNode } from '@vue-flow/core';
+import { useNode, useVueFlow } from '@vue-flow/core';
 import BaseNode from './BaseNode.vue';
 import MessageContent from './MessageContent.vue';
 import { MessageItemContainer, PositionedConnector } from './shared';
@@ -125,15 +125,9 @@ const props = defineProps({
     data: { type: Object, default: () => ({}) },
 });
 
+// Vue Flow composables
 const { id } = useNode();
-
-// Emit DOM events for Alpine/Livewire bridge
-const emitDomEvent = (name, detail) => {
-    const el = document.getElementById('flow-canvas');
-    if (el) {
-        el.dispatchEvent(new CustomEvent(name, { detail }));
-    }
-};
+const { updateNodeData } = useVueFlow();
 
 // Ref to the messages container for position calculations
 const messagesContainerRef = ref(null);
@@ -269,17 +263,14 @@ const messageTypes = [
 // Messages state - initialize from persisted data
 const messages = ref(props.data?.messages || []);
 
-// Watch for message changes and emit to parent
+// Watch for message changes and update node data via Vue Flow
 watch(messages, (newMessages) => {
-    emitDomEvent('node-data-updated', {
-        nodeId: id,
-        data: {
-            messages: newMessages.map(m => ({
-                id: m.id,
-                type: m.type,
-                content: m.content,
-            })),
-        },
+    updateNodeData(id, {
+        messages: newMessages.map(m => ({
+            id: m.id,
+            type: m.type,
+            content: m.content,
+        })),
     });
 }, { deep: true });
 

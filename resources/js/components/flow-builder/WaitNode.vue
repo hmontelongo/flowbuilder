@@ -71,7 +71,7 @@
 
 <script setup>
 import { ref, onUnmounted, watch } from 'vue';
-import { useNode } from '@vue-flow/core';
+import { useNode, useVueFlow } from '@vue-flow/core';
 import BaseNode from './BaseNode.vue';
 import { PositionedConnector } from './shared';
 import { WaitIcon } from './icons';
@@ -82,30 +82,21 @@ const props = defineProps({
     data: { type: Object, default: () => ({}) },
 });
 
+// Vue Flow composables
 const { id } = useNode();
+const { updateNodeData } = useVueFlow();
 
 // Initialize from persisted data
 const waitTime = ref(props.data?.waitTime ?? 10);
 const timeUnit = ref(props.data?.timeUnit || 'Segundos');
 const fallbackMessage = ref(props.data?.fallbackMessage || '');
 
-// Emit DOM events for Alpine/Livewire bridge
-const emitDomEvent = (name, detail) => {
-    const el = document.getElementById('flow-canvas');
-    if (el) {
-        el.dispatchEvent(new CustomEvent(name, { detail }));
-    }
-};
-
-// Watch for changes and emit to parent
+// Watch for changes and update node data via Vue Flow
 watch([waitTime, timeUnit, fallbackMessage], () => {
-    emitDomEvent('node-data-updated', {
-        nodeId: id,
-        data: {
-            waitTime: waitTime.value,
-            timeUnit: timeUnit.value,
-            fallbackMessage: fallbackMessage.value,
-        },
+    updateNodeData(id, {
+        waitTime: waitTime.value,
+        timeUnit: timeUnit.value,
+        fallbackMessage: fallbackMessage.value,
     });
 });
 
