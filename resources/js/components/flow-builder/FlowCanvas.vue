@@ -1,17 +1,20 @@
 <template>
     <div class="h-full w-full">
         <VueFlow
-            v-model:nodes="nodes"
-            v-model:edges="edges"
+            :nodes="nodes"
+            :edges="edges"
+            :apply-default="false"
             :node-types="nodeTypes"
             :default-edge-options="defaultEdgeOptions"
             :connect-on-click="false"
+            :connection-mode="ConnectionMode.Strict"
             :snap-to-grid="true"
             :snap-grid="[10, 10]"
             :default-viewport="{ x: 100, y: 100, zoom: 0.5 }"
             :min-zoom="0.2"
             :max-zoom="1.5"
-            :delete-key-code="['Backspace', 'Delete']"
+            :auto-connect="edgeConnector"
+            :connection-radius="30"
             :pan-on-drag="isSpacePressed"
             :selection-key-code="selectionEnabled ? true : null"
             :edges-selectable="true"
@@ -21,9 +24,10 @@
             fit-view-on-init
             :fit-view-options="{ padding: 0.8, maxZoom: 0.5 }"
             @node-drag-start="onNodeDragStart"
+            @node-drag="onNodeDrag"
             @node-drag-stop="onNodeDragStop"
-            @connect="onConnect"
             @edges-change="onEdgesChange"
+            @nodes-change="onNodesChange"
         >
             <Background :gap="12" :size="1" pattern-color="#d1d5db" />
         </VueFlow>
@@ -32,15 +36,17 @@
 
 <script setup>
 import { ref, markRaw, onMounted, onUnmounted, watch, computed, provide } from 'vue';
-import { VueFlow, useVueFlow } from '@vue-flow/core';
+import { useDebounceFn } from '@vueuse/core';
+import { VueFlow, useVueFlow, ConnectionMode } from '@vue-flow/core';
 import { Background } from '@vue-flow/background';
 import CanalNode from './CanalNode.vue';
 import TriggerNode from './TriggerNode.vue';
 import MessageNode from './MessageNode.vue';
 import TransferNode from './TransferNode.vue';
 import WaitNode from './WaitNode.vue';
-import TagNode from './TagNode.vue';
 import PlaceholderNode from './PlaceholderNode.vue';
+import TagModifier from './TagModifier.vue';
+import TimerModifier from './TimerModifier.vue';
 
 const props = defineProps({
     initialNodes: {
@@ -62,16 +68,44 @@ const props = defineProps({
     },
 });
 
-// Vue Flow composable - use built-in intersection detection
-const { fitView, viewport, getIntersectingNodes, updateNode } = useVueFlow();
+// Vue Flow composable - controlled mode requires manual change application
+const {
+    fitView,
+    viewport,
+    getIntersectingNodes,
+    updateNode,
+    findNode,
+    findEdge,
+    addNodes,
+    addEdges,
+    removeEdges,
+    removeNodes,
+    applyNodeChanges,
+    applyEdgeChanges,
+    toObject,
+} = useVueFlow();
+
+// Track original connections to prevent duplicates after splitting
+const originalConnections = ref(new Set());
+
+// Track highlighted edge for snap-to-edge visual feedback
+const highlightedEdgeId = ref(null);
 
 // Default node dimensions (matching NodeCard defaults)
 const DEFAULT_NODE_WIDTH = 300;
 const DEFAULT_NODE_HEIGHT = 160;
 const NODE_GAP = 20;
 
-// Get actual node dimensions from DOM, with fallback to defaults
-const getNodeDimensions = () => {
+// Modifier dimensions (small pill shapes)
+const MODIFIER_WIDTH = 120;
+const MODIFIER_HEIGHT = 32;
+
+// Get node dimensions based on type - modifiers are smaller than regular nodes
+const getNodeDimensions = (nodeType = null) => {
+    // Modifiers use smaller dimensions
+    if (nodeType?.includes('Modifier')) {
+        return { width: MODIFIER_WIDTH, height: MODIFIER_HEIGHT };
+    }
     // Try to measure an existing node in the DOM
     const nodeElement = document.querySelector('.vue-flow__node .node-card-wrapper');
     if (nodeElement) {
@@ -95,32 +129,136 @@ const hasIntersection = (nodeId) => {
 };
 
 // Simple collision check for position-based checks (add/duplicate)
-const checkPositionCollision = (position, excludeNodeId = null) => {
-    const { width: NODE_WIDTH, height: NODE_HEIGHT } = getNodeDimensions();
+// nodeType parameter allows checking with correct dimensions for the new node
+const checkPositionCollision = (position, excludeNodeId = null, nodeType = null) => {
+    const { width: newNodeWidth, height: newNodeHeight } = getNodeDimensions(nodeType);
     return nodes.value.some(node => {
         if (node.id === excludeNodeId) return false;
+        // Get dimensions for the existing node based on its type
+        const { width: existingWidth, height: existingHeight } = getNodeDimensions(node.type);
         return !(
-            position.x + NODE_WIDTH <= node.position.x ||
-            node.position.x + NODE_WIDTH <= position.x ||
-            position.y + NODE_HEIGHT <= node.position.y ||
-            node.position.y + NODE_HEIGHT <= position.y
+            position.x + newNodeWidth <= node.position.x ||
+            node.position.x + existingWidth <= position.x ||
+            position.y + newNodeHeight <= node.position.y ||
+            node.position.y + existingHeight <= position.y
         );
     });
 };
 
+// Check if a node is a modifier (compact inline node)
+const isModifierNode = (nodeId) => {
+    const node = nodes.value.find(n => n.id === nodeId);
+    return node?.type?.includes('Modifier');
+};
+
+// Calculate distance from a point to a line segment
+const pointToLineDistance = (point, lineStart, lineEnd) => {
+    const A = point.x - lineStart.x;
+    const B = point.y - lineStart.y;
+    const C = lineEnd.x - lineStart.x;
+    const D = lineEnd.y - lineStart.y;
+
+    const dot = A * C + B * D;
+    const lenSq = C * C + D * D;
+    const param = lenSq !== 0 ? dot / lenSq : -1;
+
+    let xx, yy;
+    if (param < 0) {
+        xx = lineStart.x; yy = lineStart.y;
+    } else if (param > 1) {
+        xx = lineEnd.x; yy = lineEnd.y;
+    } else {
+        xx = lineStart.x + param * C;
+        yy = lineStart.y + param * D;
+    }
+
+    const dx = point.x - xx;
+    const dy = point.y - yy;
+    return Math.sqrt(dx * dx + dy * dy);
+};
+
+// Find the closest edge to a point (within threshold)
+// Returns the edge with minimum distance, not just the first match
+const getEdgeNearPoint = (point, edgeList, nodeList, threshold = 100) => {
+    let closestEdge = null;
+    let closestDistance = Infinity;
+
+    for (const edge of edgeList) {
+        const sourceNode = nodeList.find(n => n.id === edge.source);
+        const targetNode = nodeList.find(n => n.id === edge.target);
+        if (!sourceNode || !targetNode) continue;
+
+        // Get dimensions based on node type
+        const sourceDims = getNodeDimensions(sourceNode.type);
+        const targetDims = getNodeDimensions(targetNode.type);
+
+        // Source output handle is on the right side
+        const sourceHandle = {
+            x: sourceNode.position.x + sourceDims.width,
+            y: sourceNode.position.y + sourceDims.height / 2,
+        };
+        // Target input handle is on the left side
+        const targetHandle = {
+            x: targetNode.position.x,
+            y: targetNode.position.y + targetDims.height / 2,
+        };
+
+        const distance = pointToLineDistance(point, sourceHandle, targetHandle);
+        if (distance < threshold && distance < closestDistance) {
+            closestEdge = edge;
+            closestDistance = distance;
+        }
+    }
+    return closestEdge;
+};
+
+// Split an edge by inserting a modifier between source and target
+const splitEdgeWithModifier = (edge, modifierId) => {
+    // Track the original connection to prevent duplicates
+    const connectionKey = `${edge.source}->${edge.target}`;
+    originalConnections.value.add(connectionKey);
+
+    // Store edge info
+    const oldEdgeId = edge.id;
+    const sourceId = edge.source;
+    const targetId = edge.target;
+
+    // Create new edges
+    const edge1 = {
+        id: `edge-${crypto.randomUUID()}`,
+        source: sourceId,
+        target: modifierId,
+        type: 'default',
+        selectable: true,
+    };
+
+    const edge2 = {
+        id: `edge-${crypto.randomUUID()}`,
+        source: modifierId,
+        target: targetId,
+        type: 'default',
+        selectable: true,
+    };
+
+    // Update edges: remove old edge and add new edges
+    edges.value = edges.value.filter(e => e.id !== oldEdgeId).concat([edge1, edge2]);
+    syncToLivewire();
+};
+
 // Find next free position (grid-like, predictable)
-const findNextFreePosition = (baseX, baseY) => {
-    const { width: NODE_WIDTH, height: NODE_HEIGHT } = getNodeDimensions();
+// nodeType parameter allows using correct dimensions for the new node
+const findNextFreePosition = (baseX, baseY, nodeType = null) => {
+    const { width: NODE_WIDTH, height: NODE_HEIGHT } = getNodeDimensions(nodeType);
     let position = { x: baseX, y: baseY };
 
-    if (!checkPositionCollision(position)) {
+    if (!checkPositionCollision(position, null, nodeType)) {
         return position;
     }
 
     // Try to the right first
     for (let i = 1; i <= 5; i++) {
         position = { x: baseX + i * (NODE_WIDTH + NODE_GAP), y: baseY };
-        if (!checkPositionCollision(position)) {
+        if (!checkPositionCollision(position, null, nodeType)) {
             return position;
         }
     }
@@ -132,7 +270,7 @@ const findNextFreePosition = (baseX, baseY) => {
                 x: baseX + col * (NODE_WIDTH + NODE_GAP),
                 y: baseY + row * (NODE_HEIGHT + NODE_GAP),
             };
-            if (!checkPositionCollision(position)) {
+            if (!checkPositionCollision(position, null, nodeType)) {
                 return position;
             }
         }
@@ -150,6 +288,7 @@ const handleKeyDown = (e) => {
         isSpacePressed.value = true;
         selectionEnabled.value = false; // Disable selection while panning
     }
+    // Delete is now handled natively by Vue Flow - intercepted in onNodesChange
 };
 
 const handleKeyUp = (e) => {
@@ -167,19 +306,58 @@ const emitDomEvent = (name, detail) => {
     }
 };
 
+// Auto-connect edge connector - creates edges automatically when connections are made
+const edgeConnector = (params) => {
+    return {
+        id: `edge-${crypto.randomUUID()}`,
+        source: params.source,
+        target: params.target,
+        sourceHandle: params.sourceHandle,
+        targetHandle: params.targetHandle,
+        type: 'default',
+        selectable: true,
+    };
+};
+
+// Debounced sync to Livewire - single state sync instead of individual events
+const syncToLivewire = useDebounceFn(() => {
+    const state = toObject();
+    emitDomEvent('sync-flow', {
+        nodes: state.nodes,
+        edges: state.edges,
+    });
+}, 300);
+
 // Listen for fit-view events from Alpine
 const handleFitView = () => {
     fitView({ padding: 0.2 });
 };
 
+// Calculate position within the current viewport
+const getViewportCenterPosition = () => {
+    const vp = viewport.value;
+    // Get the canvas element to know its dimensions
+    const canvasEl = document.getElementById('flow-canvas');
+    if (!canvasEl || !vp) {
+        return { x: 200, y: 100 }; // Fallback
+    }
+
+    const rect = canvasEl.getBoundingClientRect();
+    // Convert screen center to flow coordinates
+    const centerX = (rect.width / 2 - vp.x) / vp.zoom;
+    const centerY = (rect.height / 2 - vp.y) / vp.zoom;
+
+    return { x: Math.round(centerX), y: Math.round(centerY) };
+};
+
 // Add a new node to the canvas
 const addNode = (type) => {
-    // Base position - start from a fixed point
-    const baseX = 200;
-    const baseY = 100;
+    // Get position within viewport center
+    const viewportCenter = getViewportCenterPosition();
 
-    // Find the next free position in a grid-like pattern
-    const position = findNextFreePosition(baseX, baseY);
+    // Find the next free position starting from viewport center
+    // Pass type to use correct dimensions for collision detection
+    const position = findNextFreePosition(viewportCenter.x, viewportCenter.y, type);
 
     // Map type to display name
     const typeNames = {
@@ -197,10 +375,12 @@ const addNode = (type) => {
         repeat: 'Repeat',
         reset: 'Reset',
         variable: 'Variable',
-        tag: 'Tag',
         events: 'Events',
         data: 'Data',
         canal: 'Canal',
+        // Modifiers
+        tagModifier: 'Tag Modifier',
+        timerModifier: 'Timer',
     };
 
     const newNode = {
@@ -213,16 +393,8 @@ const addNode = (type) => {
         },
     };
 
-    nodes.value = [...nodes.value, newNode];
-
-    // Emit event for Livewire sync
-    emitDomEvent('node-added', {
-        nodeId: newNode.id,
-        type: newNode.type,
-        name: newNode.data.label,
-        x: newNode.position.x,
-        y: newNode.position.y,
-    });
+    addNodes([newNode]);
+    syncToLivewire();
 };
 
 // Handle add-node-request from Alpine
@@ -288,7 +460,9 @@ const nodeTypes = {
     message: markRaw(MessageNode),
     transfer: markRaw(TransferNode),
     wait: markRaw(WaitNode),
-    tag: markRaw(TagNode),
+    // Modifiers - compact inline nodes
+    tagModifier: markRaw(TagModifier),
+    timerModifier: markRaw(TimerModifier),
     // Placeholder nodes (not yet designed)
     menu: markRaw(PlaceholderNode),
     api: markRaw(PlaceholderNode),
@@ -359,22 +533,14 @@ provide('availableChannels', props.availableChannels);
 
 // Node actions for delete and duplicate
 const deleteNode = (nodeId) => {
-    // Remove the node
-    nodes.value = nodes.value.filter(n => n.id !== nodeId);
-    // Remove any edges connected to this node
-    const removedEdges = edges.value.filter(e => e.source === nodeId || e.target === nodeId);
-    edges.value = edges.value.filter(e => e.source !== nodeId && e.target !== nodeId);
-    // Emit events for Livewire sync
-    removedEdges.forEach(edge => {
-        emitDomEvent('edge-removed', { edgeId: edge.id });
-    });
-    emitDomEvent('node-deleted', { nodeId });
+    // Process removal through onNodesChange for proper modifier reconnection
+    onNodesChange([{ type: 'remove', id: nodeId }]);
 };
 
 const duplicateNode = (nodeId) => {
-    const node = nodes.value.find(n => n.id === nodeId);
+    const node = findNode(nodeId);
     if (node) {
-        const { width: NODE_WIDTH, height: NODE_HEIGHT } = getNodeDimensions();
+        const { width: NODE_WIDTH, height: NODE_HEIGHT } = getNodeDimensions(node.type);
 
         // Try to place directly to the right of the original
         let position = {
@@ -383,7 +549,7 @@ const duplicateNode = (nodeId) => {
         };
 
         // If that position is taken, try below
-        if (checkPositionCollision(position)) {
+        if (checkPositionCollision(position, null, node.type)) {
             position = {
                 x: node.position.x,
                 y: node.position.y + NODE_HEIGHT + NODE_GAP,
@@ -391,8 +557,8 @@ const duplicateNode = (nodeId) => {
         }
 
         // If still taken, find next available position nearby
-        if (checkPositionCollision(position)) {
-            position = findNextFreePosition(node.position.x, node.position.y);
+        if (checkPositionCollision(position, null, node.type)) {
+            position = findNextFreePosition(node.position.x, node.position.y, node.type);
         }
 
         const newNode = {
@@ -401,14 +567,8 @@ const duplicateNode = (nodeId) => {
             position: position,
             data: { ...node.data },
         };
-        nodes.value = [...nodes.value, newNode];
-        emitDomEvent('node-duplicated', {
-            nodeId: newNode.id,
-            type: node.type,
-            name: node.data?.label || node.type,
-            x: newNode.position.x,
-            y: newNode.position.y,
-        });
+        addNodes([newNode]);
+        syncToLivewire();
     }
 };
 
@@ -423,10 +583,80 @@ const onNodeDragStart = (event) => {
         x: event.node.position.x,
         y: event.node.position.y,
     };
+    // Clear any previous highlight
+    clearEdgeHighlight();
+};
+
+// Handle continuous drag for snap-to-edge visual feedback
+const onNodeDrag = (event) => {
+    const node = event.node;
+
+    // Only show highlight for unconnected modifiers
+    if (!node.type?.includes('Modifier')) {
+        clearEdgeHighlight();
+        return;
+    }
+
+    const hasIncoming = edges.value.some(e => e.target === node.id);
+    const hasOutgoing = edges.value.some(e => e.source === node.id);
+
+    if (hasIncoming || hasOutgoing) {
+        clearEdgeHighlight();
+        return;
+    }
+
+    // Check if near an edge (threshold 500 accounts for flow coordinate scale at various zoom levels)
+    const nearbyEdge = getEdgeNearPoint(node.position, edges.value, nodes.value);
+
+    if (nearbyEdge && nearbyEdge.id !== highlightedEdgeId.value) {
+        // Clear previous highlight and set new one
+        clearEdgeHighlight();
+        highlightedEdgeId.value = nearbyEdge.id;
+        // Use findEdge and direct mutation for proper reactivity
+        const edge = findEdge(nearbyEdge.id);
+        if (edge) {
+            edge.style = { stroke: '#3866ff', strokeWidth: 2.5 };
+            edge.animated = true;
+        }
+    } else if (!nearbyEdge && highlightedEdgeId.value) {
+        clearEdgeHighlight();
+    }
+};
+
+// Clear edge highlight
+const clearEdgeHighlight = () => {
+    if (highlightedEdgeId.value) {
+        const edge = findEdge(highlightedEdgeId.value);
+        if (edge) {
+            edge.style = { stroke: '#d1d5db', strokeWidth: 1.5 };
+            edge.animated = false;
+        }
+        highlightedEdgeId.value = null;
+    }
 };
 
 const onNodeDragStop = (event) => {
     const node = event.node;
+
+    // Clear edge highlight
+    clearEdgeHighlight();
+
+    // For unconnected modifiers, check snap-to-edge FIRST (before collision detection)
+    // This allows modifiers to snap onto edges even when near other nodes
+    if (node.type?.includes('Modifier')) {
+        const hasIncoming = edges.value.some(e => e.target === node.id);
+        const hasOutgoing = edges.value.some(e => e.source === node.id);
+
+        if (!hasIncoming && !hasOutgoing) {
+            const nearbyEdge = getEdgeNearPoint(node.position, edges.value, nodes.value);
+            if (nearbyEdge) {
+                splitEdgeWithModifier(nearbyEdge, node.id);
+                // Clear stored position and return - edge snap takes priority
+                dragStartPosition.value = null;
+                return;
+            }
+        }
+    }
 
     // Check for collision using Vue Flow's built-in intersection detection
     const intersecting = getIntersectingNodes(node);
@@ -439,54 +669,114 @@ const onNodeDragStop = (event) => {
                 y: dragStartPosition.value.y,
             },
         });
-
-        // Emit the original position (no change)
-        emitDomEvent('node-position-updated', {
-            nodeId: node.id,
-            x: Math.round(dragStartPosition.value.x),
-            y: Math.round(dragStartPosition.value.y),
-        });
-    } else {
-        // No collision - emit the new position
-        emitDomEvent('node-position-updated', {
-            nodeId: node.id,
-            x: Math.round(node.position.x),
-            y: Math.round(node.position.y),
-        });
     }
 
-    // Clear stored position
+    // Clear stored position and sync state
     dragStartPosition.value = null;
+    syncToLivewire();
 };
 
-const onConnect = (connection) => {
-    const newEdge = {
-        id: `edge-${crypto.randomUUID()}`,
-        source: connection.source,
-        target: connection.target,
-        type: 'default',
-        selectable: true,
-    };
-    edges.value = [...edges.value, newEdge];
-    emitDomEvent('edge-added', {
-        edgeId: newEdge.id,
-        source: connection.source,
-        target: connection.target,
-    });
-};
-
+// Handle edge changes - apply changes and sync to Livewire
 const onEdgesChange = (changes) => {
-    changes.forEach(change => {
+    applyEdgeChanges(changes);
+    syncToLivewire();
+};
+
+// Handle node changes - apply changes, handle modifier reconnection, and sync to Livewire
+const onNodesChange = (changes) => {
+    for (const change of changes) {
         if (change.type === 'remove') {
-            emitDomEvent('edge-removed', { edgeId: change.id });
+            const nodeId = change.id;
+
+            // Handle modifier reconnection before the node is removed
+            if (isModifierNode(nodeId)) {
+                const incomingEdge = edges.value.find(e => e.target === nodeId);
+                const outgoingEdge = edges.value.find(e => e.source === nodeId);
+
+                if (incomingEdge && outgoingEdge) {
+                    // Create reconnection edge
+                    const reconnectEdge = {
+                        id: `edge-${crypto.randomUUID()}`,
+                        source: incomingEdge.source,
+                        target: outgoingEdge.target,
+                        type: 'default',
+                        selectable: true,
+                    };
+
+                    // Update edges ref: remove old edges, add reconnection
+                    edges.value = edges.value
+                        .filter(e => e.id !== incomingEdge.id && e.id !== outgoingEdge.id)
+                        .concat(reconnectEdge);
+                }
+            }
         }
-    });
+    }
+
+    applyNodeChanges(changes);
+    syncToLivewire();
 };
 
 // Connection validation - determines if a connection can be made
 const isValidConnection = (connection) => {
-    // Only block self-connections for now
-    return connection.source !== connection.target;
+    // Block self-connections
+    if (connection.source === connection.target) {
+        return false;
+    }
+
+    // Block duplicate connections (same source → target already exists)
+    const duplicateExists = edges.value.some(
+        edge => edge.source === connection.source && edge.target === connection.target
+    );
+    if (duplicateExists) {
+        return false;
+    }
+
+    // Block backward connections (would create a cycle)
+    // Check if target is already upstream of source (i.e., there's a path from target to source)
+    const reverseExists = edges.value.some(
+        edge => edge.source === connection.target && edge.target === connection.source
+    );
+    if (reverseExists) {
+        return false;
+    }
+
+    // Block cycle-creating connections using BFS
+    // If we can reach the source from the target through existing edges, it would create a cycle
+    const canReachSourceFromTarget = (targetId, sourceId) => {
+        const visited = new Set();
+        const queue = [targetId];
+
+        while (queue.length > 0) {
+            const currentId = queue.shift();
+            if (currentId === sourceId) {
+                return true; // Found a path from target to source - would create cycle
+            }
+            if (visited.has(currentId)) {
+                continue;
+            }
+            visited.add(currentId);
+
+            // Find all nodes that this node connects to (outgoing edges)
+            for (const edge of edges.value) {
+                if (edge.source === currentId && !visited.has(edge.target)) {
+                    queue.push(edge.target);
+                }
+            }
+        }
+        return false;
+    };
+
+    if (canReachSourceFromTarget(connection.target, connection.source)) {
+        return false;
+    }
+
+    // Block connections that were split by a modifier (prevents duplicates after tag insertion)
+    const connectionKey = `${connection.source}->${connection.target}`;
+    if (originalConnections.value.has(connectionKey)) {
+        return false;
+    }
+
+    return true;
 };
 </script>
 
@@ -515,9 +805,28 @@ const isValidConnection = (connection) => {
 }
 
 .vue-flow .vue-flow__node.selected > div {
-    outline: 2px solid #3866ff;
+    outline: 1.5px solid #3866ff;
     outline-offset: 2px;
     border-radius: 8px;
+}
+
+/* Selected blocks - reset border to avoid stacking with outline */
+.vue-flow .vue-flow__node.selected .node-card {
+    border-color: var(--color-fb-node-border-normal, #e5e7eb) !important;
+}
+
+/* Modifiers handle their own selection styling */
+.vue-flow .vue-flow__node.selected > div:has(.tag-modifier),
+.vue-flow .vue-flow__node.selected > div:has(.timer-modifier) {
+    outline: none;
+}
+
+/* Selected modifier - outline only, reset border */
+.vue-flow .vue-flow__node.selected .tag-modifier,
+.vue-flow .vue-flow__node.selected .timer-modifier {
+    border-color: var(--color-fb-node-border-normal, #e5e7eb) !important;
+    outline: 1.5px solid #3866ff;
+    outline-offset: 2px;
 }
 
 /* Custom handle styles - rounded square per Figma */
@@ -551,6 +860,18 @@ const isValidConnection = (connection) => {
 .vue-flow .vue-flow__edge:hover .vue-flow__edge-path {
     stroke: #6b7280;
     cursor: pointer;
+}
+
+/* Highlighted edge for snap-to-edge feedback */
+.vue-flow .vue-flow__edge.animated .vue-flow__edge-path {
+    stroke-dasharray: 5;
+    animation: edge-dash 0.5s linear infinite;
+}
+
+@keyframes edge-dash {
+    to {
+        stroke-dashoffset: -10;
+    }
 }
 
 /* Connection line styling (line being drawn) */

@@ -29,31 +29,12 @@
                         }));
                     });
 
-                    // Listen for Vue Flow events and forward to Livewire
-                    this.$el.addEventListener('node-position-updated', (e) => {
-                        $wire.updateNodePosition(e.detail.nodeId, e.detail.x, e.detail.y);
+                    // Primary sync event - full state sync from Vue Flow (Phase 1 refactor)
+                    this.$el.addEventListener('sync-flow', (e) => {
+                        $wire.syncFlow(e.detail.nodes, e.detail.edges);
                     });
 
-                    this.$el.addEventListener('edge-added', (e) => {
-                        $wire.addEdge(e.detail.edgeId, e.detail.source, e.detail.target);
-                    });
-
-                    this.$el.addEventListener('edge-removed', (e) => {
-                        $wire.removeEdge(e.detail.edgeId);
-                    });
-
-                    this.$el.addEventListener('node-deleted', (e) => {
-                        $wire.removeNode(e.detail.nodeId);
-                    });
-
-                    this.$el.addEventListener('node-duplicated', (e) => {
-                        $wire.addNode(e.detail.nodeId, e.detail.type, e.detail.name, e.detail.x, e.detail.y);
-                    });
-
-                    this.$el.addEventListener('node-added', (e) => {
-                        $wire.addNode(e.detail.nodeId, e.detail.type, e.detail.name, e.detail.x, e.detail.y);
-                    });
-
+                    // Legacy: node data updates (will be removed in Phase 2)
                     this.$el.addEventListener('node-data-updated', (e) => {
                         $wire.updateNodeData(e.detail.nodeId, e.detail.data);
                     });

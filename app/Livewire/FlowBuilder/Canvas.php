@@ -45,6 +45,37 @@ class Canvas extends Component
         ]);
     }
 
+    /**
+     * Sync the full flow state from Vue Flow.
+     *
+     * @param  array<int, array{id: string, type: string, position: array{x: float, y: float}, data: array<string, mixed>}>  $nodes
+     * @param  array<int, array{id: string, source: string, target: string}>  $edges
+     */
+    public function syncFlow(array $nodes, array $edges): void
+    {
+        $this->nodes = collect($nodes)->map(function ($node) {
+            return [
+                'id' => $node['id'],
+                'type' => $node['type'],
+                'name' => $node['data']['label'] ?? $node['type'],
+                'x' => (int) round($node['position']['x']),
+                'y' => (int) round($node['position']['y']),
+                'data' => $node['data'] ?? [],
+                'state' => $node['data']['state'] ?? ['mode' => 'normal'],
+            ];
+        })->toArray();
+
+        $this->edges = collect($edges)->map(function ($edge) {
+            return [
+                'id' => $edge['id'],
+                'source' => $edge['source'],
+                'target' => $edge['target'],
+            ];
+        })->toArray();
+
+        $this->persist();
+    }
+
     public function updateNodePosition(string $nodeId, int $x, int $y): void
     {
         foreach ($this->nodes as $index => $node) {
