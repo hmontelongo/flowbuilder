@@ -453,6 +453,7 @@ watch(
     }
 );
 
+
 // Node types for custom rendering
 const nodeTypes = {
     canal: markRaw(CanalNode),
@@ -514,6 +515,12 @@ const transformEdges = (edgeList) => {
 const nodes = ref(transformNodes(props.initialNodes));
 const edges = ref(transformEdges(props.initialEdges));
 
+// Watch for node data changes from child components (via updateNodeData)
+// This ensures changes made by child nodes are synced to Livewire
+watch(nodes, () => {
+    syncToLivewire();
+}, { deep: true });
+
 // Compute connected node IDs for handle styling
 const connectedNodeIds = computed(() => {
     const connected = new Set();
@@ -574,6 +581,9 @@ const duplicateNode = (nodeId) => {
 
 // Provide node actions to child components
 provide('nodeActions', { deleteNode, duplicateNode });
+
+// Provide syncToLivewire for child components to call after updating node data
+provide('syncToLivewire', syncToLivewire);
 
 // Event handlers
 const onNodeDragStart = (event) => {

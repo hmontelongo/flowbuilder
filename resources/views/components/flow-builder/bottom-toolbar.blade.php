@@ -14,10 +14,21 @@
 
     {{-- Bookmark (Tag) --}}
     <div class="bg-white flex items-center overflow-clip rounded-[8px]">
-        <button type="button" class="flex gap-[8px] h-[32px] items-center justify-center px-[8px] py-[4px] rounded-[8px] hover:bg-[#f3f4f6]" title="Etiqueta" @click="$dispatch('add-block', { type: 'tag' })">
+        <button type="button" class="flex gap-[8px] h-[32px] items-center justify-center px-[8px] py-[4px] rounded-[8px] hover:bg-[#f3f4f6]" title="Etiqueta" @click="$dispatch('add-block', { type: 'tagModifier' })">
             <div class="overflow-clip relative size-[16px]">
                 <svg class="size-full" viewBox="0 0 16 16" fill="none">
                     <path d="M11 1H5C4.4 1 4 1.4 4 2V15L8 12.5L12 15V2C12 1.4 11.6 1 11 1ZM11 13.5L8 11.5L5 13.5V2H11V13.5Z" fill="#364153"/>
+                </svg>
+            </div>
+        </button>
+    </div>
+
+    {{-- Timer --}}
+    <div class="bg-white flex items-center overflow-clip rounded-[8px]">
+        <button type="button" class="flex gap-[8px] h-[32px] items-center justify-center px-[8px] py-[4px] rounded-[8px] hover:bg-[#f3f4f6]" title="Temporizador" @click="$dispatch('add-block', { type: 'timerModifier' })">
+            <div class="overflow-clip relative size-[16px]">
+                <svg class="size-full" viewBox="0 0 16 16" fill="none">
+                    <path d="M9.4 13.45C9.25 13 8.9 12.7 8.5 12.55V10.95C11 10.7 13 8.55 13 6C13 3.45 10.75 1 8 1C5.25 1 3 3.2 3 5.95C3 8.7 4.95 10.7 7.5 10.95V12.55C7.05 12.7 6.75 13.05 6.6 13.45H2V14.45H6.6C6.8 15.05 7.35 15.45 8 15.45C8.65 15.45 9.2 15.05 9.4 14.45H14V13.45H9.4ZM4 5.95C4 3.75 5.8 1.95 8 1.95C10.2 1.95 12 3.75 12 5.95C12 8.15 10.2 9.95 8 9.95C5.8 9.95 4 8.15 4 5.95ZM8 14.45C7.7 14.45 7.5 14.2 7.5 13.95C7.5 13.7 7.7 13.45 8 13.45C8.3 13.45 8.5 13.7 8.5 13.95C8.5 14.2 8.25 14.45 8 14.45ZM9.65 8.3L7.5 6.15V2.95H8.5V5.75L10.35 7.6L9.65 8.3Z" fill="#364153"/>
                 </svg>
             </div>
         </button>

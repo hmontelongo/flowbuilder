@@ -37,8 +37,12 @@ const isOutputConnected = computed(() =>
 const nodeActions = inject('nodeActions', null);
 const onDelete = () => nodeActions?.deleteNode?.(id);
 
-// Update node data via Vue Flow
+// Sync to Livewire via inject
+const syncToLivewire = inject('syncToLivewire', null);
+
+// Update node data via Vue Flow and trigger sync
 const emitDataUpdate = (data) => {
     updateNodeData(id, data);
+    syncToLivewire?.();
 };
 </script>

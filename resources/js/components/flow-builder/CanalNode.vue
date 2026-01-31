@@ -52,6 +52,9 @@ const props = defineProps({
 const { id } = useNode();
 const { updateNodeData } = useVueFlow();
 
+// Inject syncToLivewire for persisting data changes
+const syncToLivewire = inject('syncToLivewire', null);
+
 // Inject available channels from FlowCanvas
 const availableChannels = inject('availableChannels', ref([
     // Default mock data for development
@@ -130,6 +133,7 @@ watch(selectedChannelId, (newValue, oldValue) => {
     // Only update when selection actually changes
     if (newValue && newValue !== oldValue) {
         updateNodeData(id, { channelId: newValue });
+        syncToLivewire?.();
     }
 });
 </script>

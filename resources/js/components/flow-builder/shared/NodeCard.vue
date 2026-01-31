@@ -18,7 +18,7 @@
 
         <!-- Card container -->
         <div
-            class="bg-white flex flex-col"
+            class="node-card bg-white flex flex-col"
             :style="cardStyles"
         >
             <slot />
@@ -104,3 +104,15 @@ const cardStyles = computed(() => ({
     opacity: props.state.mode === 'readonly' ? '0.7' : '1',
 }));
 </script>
+
+<style scoped>
+/* Smooth transition for hover state */
+.node-card {
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Hover state - blue border for interactive feedback */
+.node-card:hover {
+    border-color: var(--color-fb-node-border-edit, #3866ff) !important;
+}
+</style>

@@ -13,7 +13,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, inject } from 'vue';
 import { useNode, useVueFlow } from '@vue-flow/core';
 import BaseNode from './BaseNode.vue';
 import { NodeInput } from './shared';
@@ -29,6 +29,9 @@ const props = defineProps({
 const { id } = useNode();
 const { updateNodeData } = useVueFlow();
 
+// Inject syncToLivewire for persisting data changes
+const syncToLivewire = inject('syncToLivewire', null);
+
 // Initialize from persisted data
 const chatCenterValue = ref(props.data?.chatCenter || '');
 
@@ -37,6 +40,7 @@ watch(chatCenterValue, () => {
     updateNodeData(id, {
         chatCenter: chatCenterValue.value,
     });
+    syncToLivewire?.();
 });
 
 const nodeConfig = {

@@ -112,7 +112,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, markRaw, provide, onMounted, onUnmounted, nextTick, watch } from 'vue';
+import { ref, reactive, computed, markRaw, provide, onMounted, onUnmounted, nextTick, watch, inject } from 'vue';
 import { useNode, useVueFlow } from '@vue-flow/core';
 import BaseNode from './BaseNode.vue';
 import MessageContent from './MessageContent.vue';
@@ -128,6 +128,9 @@ const props = defineProps({
 // Vue Flow composables
 const { id } = useNode();
 const { updateNodeData } = useVueFlow();
+
+// Inject syncToLivewire for persisting data changes
+const syncToLivewire = inject('syncToLivewire', null);
 
 // Ref to the messages container for position calculations
 const messagesContainerRef = ref(null);
@@ -272,6 +275,7 @@ watch(messages, (newMessages) => {
             content: m.content,
         })),
     });
+    syncToLivewire?.();
 }, { deep: true });
 
 // Type picker state

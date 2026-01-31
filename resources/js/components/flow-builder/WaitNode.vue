@@ -70,7 +70,7 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted, watch } from 'vue';
+import { ref, onUnmounted, watch, inject } from 'vue';
 import { useNode, useVueFlow } from '@vue-flow/core';
 import BaseNode from './BaseNode.vue';
 import { PositionedConnector } from './shared';
@@ -86,6 +86,9 @@ const props = defineProps({
 const { id } = useNode();
 const { updateNodeData } = useVueFlow();
 
+// Inject syncToLivewire for persisting data changes
+const syncToLivewire = inject('syncToLivewire', null);
+
 // Initialize from persisted data
 const waitTime = ref(props.data?.waitTime ?? 10);
 const timeUnit = ref(props.data?.timeUnit || 'Segundos');
@@ -98,6 +101,7 @@ watch([waitTime, timeUnit, fallbackMessage], () => {
         timeUnit: timeUnit.value,
         fallbackMessage: fallbackMessage.value,
     });
+    syncToLivewire?.();
 });
 
 // Refs for DOM measurement

@@ -63,7 +63,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, inject } from 'vue';
 import { useNode, useVueFlow } from '@vue-flow/core';
 import BaseNode from './BaseNode.vue';
 import { NodeDropdown, NodeInput, NodeToggle } from './shared';
@@ -79,6 +79,9 @@ const props = defineProps({
 const { id } = useNode();
 const { updateNodeData } = useVueFlow();
 
+// Inject syncToLivewire for persisting data changes
+const syncToLivewire = inject('syncToLivewire', null);
+
 // State - initialize from props.data (passed by Vue Flow)
 const selectedAction = ref(props.data?.action || '');
 const keyword = ref('');
@@ -92,6 +95,7 @@ watch([selectedAction, keywords, exactMatch], () => {
         keywords: keywords.value,
         exactMatch: exactMatch.value,
     });
+    syncToLivewire?.();
 }, { deep: true });
 
 // Dropdown sections for trigger types
