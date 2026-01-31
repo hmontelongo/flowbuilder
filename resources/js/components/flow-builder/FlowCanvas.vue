@@ -1,9 +1,8 @@
 <template>
     <div class="h-full w-full">
         <VueFlow
-            :nodes="nodes"
-            :edges="edges"
-            :apply-default="false"
+            v-model:nodes="nodes"
+            v-model:edges="edges"
             :node-types="nodeTypes"
             :default-edge-options="defaultEdgeOptions"
             :connect-on-click="false"
@@ -26,8 +25,6 @@
             @node-drag-start="onNodeDragStart"
             @node-drag="onNodeDrag"
             @node-drag-stop="onNodeDragStop"
-            @edges-change="onEdgesChange"
-            @nodes-change="onNodesChange"
         >
             <Background :gap="12" :size="1" pattern-color="#d1d5db" />
         </VueFlow>
@@ -35,7 +32,7 @@
 </template>
 
 <script setup>
-import { ref, markRaw, onMounted, onUnmounted, watch, computed, provide } from 'vue';
+import { ref, markRaw, onMounted, onUnmounted, watch, computed, provide, nextTick } from 'vue';
 import { useDebounceFn } from '@vueuse/core';
 import { VueFlow, useVueFlow, ConnectionMode } from '@vue-flow/core';
 import { Background } from '@vue-flow/background';
@@ -68,7 +65,7 @@ const props = defineProps({
     },
 });
 
-// Vue Flow composable - controlled mode requires manual change application
+// Vue Flow composable - v-model handles state synchronization
 const {
     fitView,
     viewport,
@@ -80,8 +77,6 @@ const {
     addEdges,
     removeEdges,
     removeNodes,
-    applyNodeChanges,
-    applyEdgeChanges,
     toObject,
 } = useVueFlow();
 
@@ -90,6 +85,11 @@ const originalConnections = ref(new Set());
 
 // Track highlighted edge for snap-to-edge visual feedback
 const highlightedEdgeId = ref(null);
+
+// Flag to allow programmatic modifier edge creation
+// Vue Flow calls isValidConnection for ALL edge changes (including v-model updates)
+// This flag bypasses the modifier check during splitEdgeWithModifier
+let allowModifierEdges = false;
 
 // Default node dimensions (matching NodeCard defaults)
 const DEFAULT_NODE_WIDTH = 300;
@@ -121,12 +121,6 @@ const getNodeDimensions = (nodeType = null) => {
 
 // Store original position before drag (for snap-back on collision)
 const dragStartPosition = ref(null);
-
-// Check collision using Vue Flow's getIntersectingNodes
-const hasIntersection = (nodeId) => {
-    const intersecting = getIntersectingNodes({ id: nodeId });
-    return intersecting.length > 0;
-};
 
 // Simple collision check for position-based checks (add/duplicate)
 // nodeType parameter allows checking with correct dimensions for the new node
@@ -179,14 +173,19 @@ const pointToLineDistance = (point, lineStart, lineEnd) => {
 
 // Find the closest edge to a point (within threshold)
 // Returns the edge with minimum distance, not just the first match
-const getEdgeNearPoint = (point, edgeList, nodeList, threshold = 100) => {
+const getEdgeNearPoint = (point, edgeList, nodeList, threshold = 150) => {
     let closestEdge = null;
     let closestDistance = Infinity;
+
+    const pointX = point.x;
+    const pointY = point.y;
 
     for (const edge of edgeList) {
         const sourceNode = nodeList.find(n => n.id === edge.source);
         const targetNode = nodeList.find(n => n.id === edge.target);
-        if (!sourceNode || !targetNode) continue;
+        if (!sourceNode || !targetNode) {
+            continue;
+        }
 
         // Get dimensions based on node type
         const sourceDims = getNodeDimensions(sourceNode.type);
@@ -203,7 +202,8 @@ const getEdgeNearPoint = (point, edgeList, nodeList, threshold = 100) => {
             y: targetNode.position.y + targetDims.height / 2,
         };
 
-        const distance = pointToLineDistance(point, sourceHandle, targetHandle);
+        const distance = pointToLineDistance({ x: pointX, y: pointY }, sourceHandle, targetHandle);
+
         if (distance < threshold && distance < closestDistance) {
             closestEdge = edge;
             closestDistance = distance;
@@ -213,35 +213,45 @@ const getEdgeNearPoint = (point, edgeList, nodeList, threshold = 100) => {
 };
 
 // Split an edge by inserting a modifier between source and target
-const splitEdgeWithModifier = (edge, modifierId) => {
-    // Track the original connection to prevent duplicates
-    const connectionKey = `${edge.source}->${edge.target}`;
-    originalConnections.value.add(connectionKey);
+const splitEdgeWithModifier = async (edgeRef, modifierId) => {
+    const sourceId = String(edgeRef.source);
+    const targetId = String(edgeRef.target);
+    const edgeId = String(edgeRef.id);
 
-    // Store edge info
-    const oldEdgeId = edge.id;
-    const sourceId = edge.source;
-    const targetId = edge.target;
+    if (!sourceId || !targetId) return;
 
-    // Create new edges
-    const edge1 = {
-        id: `edge-${crypto.randomUUID()}`,
-        source: sourceId,
-        target: modifierId,
-        type: 'default',
-        selectable: true,
-    };
+    // Track to prevent manual duplicate connections
+    originalConnections.value.add(`${sourceId}->${targetId}`);
 
-    const edge2 = {
-        id: `edge-${crypto.randomUUID()}`,
-        source: modifierId,
-        target: targetId,
-        type: 'default',
-        selectable: true,
-    };
+    // Enable modifier edge creation (Vue Flow calls isValidConnection for v-model updates)
+    allowModifierEdges = true;
 
-    // Update edges: remove old edge and add new edges
-    edges.value = edges.value.filter(e => e.id !== oldEdgeId).concat([edge1, edge2]);
+    // Remove the original edge first
+    removeEdges([edgeId]);
+
+    // Add the two new edges using Vue Flow's API
+    addEdges([
+        {
+            id: `e-${sourceId}-${modifierId}`,
+            source: sourceId,
+            target: modifierId,
+            type: 'default',
+            selectable: true,
+        },
+        {
+            id: `e-${modifierId}-${targetId}`,
+            source: modifierId,
+            target: targetId,
+            type: 'default',
+            selectable: true,
+        },
+    ]);
+
+    await nextTick();
+
+    // Disable modifier edge creation after Vue Flow has processed the update
+    allowModifierEdges = false;
+
     syncToLivewire();
 };
 
@@ -539,9 +549,14 @@ provide('connectedNodeIds', connectedNodeIds);
 provide('availableChannels', props.availableChannels);
 
 // Node actions for delete and duplicate
-const deleteNode = (nodeId) => {
-    // Process removal through onNodesChange for proper modifier reconnection
-    onNodesChange([{ type: 'remove', id: nodeId }]);
+const deleteNode = async (nodeId) => {
+    // Handle modifier reconnection before deletion
+    if (isModifierNode(nodeId)) {
+        await handleModifierDeletion(nodeId);
+    }
+    // Remove the node using Vue Flow's removeNodes
+    removeNodes([nodeId]);
+    syncToLivewire();
 };
 
 const duplicateNode = (nodeId) => {
@@ -645,7 +660,7 @@ const clearEdgeHighlight = () => {
     }
 };
 
-const onNodeDragStop = (event) => {
+const onNodeDragStop = async (event) => {
     const node = event.node;
 
     // Clear edge highlight
@@ -660,7 +675,7 @@ const onNodeDragStop = (event) => {
         if (!hasIncoming && !hasOutgoing) {
             const nearbyEdge = getEdgeNearPoint(node.position, edges.value, nodes.value);
             if (nearbyEdge) {
-                splitEdgeWithModifier(nearbyEdge, node.id);
+                await splitEdgeWithModifier(nearbyEdge, node.id);
                 // Clear stored position and return - edge snap takes priority
                 dragStartPosition.value = null;
                 return;
@@ -686,50 +701,49 @@ const onNodeDragStop = (event) => {
     syncToLivewire();
 };
 
-// Handle edge changes - apply changes and sync to Livewire
-const onEdgesChange = (changes) => {
-    applyEdgeChanges(changes);
-    syncToLivewire();
-};
+// Handle modifier deletion - reconnect the edges when a modifier is deleted
+// Called from deleteNode action
+const handleModifierDeletion = async (nodeId) => {
+    const incomingEdge = edges.value.find(e => e.target === nodeId);
+    const outgoingEdge = edges.value.find(e => e.source === nodeId);
 
-// Handle node changes - apply changes, handle modifier reconnection, and sync to Livewire
-const onNodesChange = (changes) => {
-    for (const change of changes) {
-        if (change.type === 'remove') {
-            const nodeId = change.id;
+    if (incomingEdge && outgoingEdge) {
+        // Clean up originalConnections when modifier is deleted
+        const reconnectionKey = `${incomingEdge.source}->${outgoingEdge.target}`;
+        originalConnections.value.delete(reconnectionKey);
 
-            // Handle modifier reconnection before the node is removed
-            if (isModifierNode(nodeId)) {
-                const incomingEdge = edges.value.find(e => e.target === nodeId);
-                const outgoingEdge = edges.value.find(e => e.source === nodeId);
+        // Remove the modifier's edges
+        removeEdges([incomingEdge.id, outgoingEdge.id]);
 
-                if (incomingEdge && outgoingEdge) {
-                    // Create reconnection edge
-                    const reconnectEdge = {
-                        id: `edge-${crypto.randomUUID()}`,
-                        source: incomingEdge.source,
-                        target: outgoingEdge.target,
-                        type: 'default',
-                        selectable: true,
-                    };
+        // Enable modifier edges - target might be another modifier in a chain
+        allowModifierEdges = true;
 
-                    // Update edges ref: remove old edges, add reconnection
-                    edges.value = edges.value
-                        .filter(e => e.id !== incomingEdge.id && e.id !== outgoingEdge.id)
-                        .concat(reconnectEdge);
-                }
-            }
-        }
+        // Add the reconnection edge
+        addEdges([{
+            id: `edge-${crypto.randomUUID()}`,
+            source: incomingEdge.source,
+            target: outgoingEdge.target,
+            type: 'default',
+            selectable: true,
+        }]);
+
+        await nextTick();
+        allowModifierEdges = false;
     }
-
-    applyNodeChanges(changes);
-    syncToLivewire();
 };
 
 // Connection validation - determines if a connection can be made
 const isValidConnection = (connection) => {
     // Block self-connections
     if (connection.source === connection.target) {
+        return false;
+    }
+
+    // Block manual connections to/from modifiers (but allow programmatic ones)
+    // Modifiers can only be connected via drag-onto-edge (splitEdgeWithModifier)
+    const sourceNode = nodes.value.find(n => n.id === connection.source);
+    const targetNode = nodes.value.find(n => n.id === connection.target);
+    if (!allowModifierEdges && (sourceNode?.type?.includes('Modifier') || targetNode?.type?.includes('Modifier'))) {
         return false;
     }
 
