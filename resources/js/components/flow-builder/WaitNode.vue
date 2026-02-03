@@ -12,7 +12,7 @@
                 side="right"
                 variant="error"
                 :connected="isHandleConnected('no-response').value"
-                :top="noResponseConnectorTop"
+                :top="getPosition('noResponse', 50)"
             />
         </template>
 
@@ -70,11 +70,12 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted, watch, inject } from 'vue';
+import { ref, watch, inject, onMounted } from 'vue';
 import { useNode, useVueFlow } from '@vue-flow/core';
 import BaseNode from './BaseNode.vue';
 import { PositionedConnector } from './shared';
 import { WaitIcon } from './icons';
+import { useConnectorPositionTracking } from './composables/useConnectorPositionTracking';
 
 // Vue Flow passes these props to custom nodes
 const props = defineProps({
@@ -104,56 +105,24 @@ watch([waitTime, timeUnit, fallbackMessage], () => {
     syncToLivewire?.();
 });
 
-// Refs for DOM measurement
+// Refs for DOM elements
 const contentRef = ref(null);
 const noResponseLabelRef = ref(null);
-const noResponseConnectorTop = ref(50); // Default fallback
 
-// ResizeObserver for layout changes
-let resizeObserver = null;
-let isUnmounted = false;
+// Use composable for connector position tracking
+const { registerElement, getPosition } = useConnectorPositionTracking(contentRef);
 
-const recalculateConnectorPosition = () => {
-    if (isUnmounted || !contentRef.value || !noResponseLabelRef.value) return;
-
-    const cardWrapper = contentRef.value.closest('.node-card-wrapper');
-    if (!cardWrapper) return;
-
-    // Calculate position using offsetTop chain
-    let top = noResponseLabelRef.value.offsetTop + (noResponseLabelRef.value.offsetHeight / 2);
-    let el = noResponseLabelRef.value.offsetParent;
-
-    while (el && el !== cardWrapper && !el.classList?.contains('node-card-wrapper')) {
-        top += el.offsetTop;
-        el = el.offsetParent;
+// Register the no-response label element when mounted
+onMounted(() => {
+    if (noResponseLabelRef.value) {
+        registerElement('noResponse', noResponseLabelRef.value);
     }
+});
 
-    noResponseConnectorTop.value = top;
-};
-
-// Setup ResizeObserver when content is available
-watch(contentRef, (container) => {
-    if (resizeObserver) {
-        resizeObserver.disconnect();
-        resizeObserver = null;
-    }
-    if (container && !isUnmounted) {
-        resizeObserver = new ResizeObserver(() => {
-            if (!isUnmounted) {
-                recalculateConnectorPosition();
-            }
-        });
-        resizeObserver.observe(container);
-        // Initial calculation after mount
-        setTimeout(recalculateConnectorPosition, 10);
-    }
-}, { immediate: true });
-
-onUnmounted(() => {
-    isUnmounted = true;
-    if (resizeObserver) {
-        resizeObserver.disconnect();
-        resizeObserver = null;
+// Watch for ref changes (in case element is conditionally rendered)
+watch(noResponseLabelRef, (el) => {
+    if (el) {
+        registerElement('noResponse', el);
     }
 });
 

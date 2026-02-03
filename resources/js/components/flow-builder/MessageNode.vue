@@ -13,7 +13,7 @@
                 type="source"
                 side="right"
                 :connected="isHandleConnected(`button-${btn.id}`).value"
-                :top="getButtonConnectorTop(btn.id)"
+                :top="getPosition(btn.id, 50)"
             />
         </template>
 
@@ -112,12 +112,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, markRaw, provide, onMounted, onUnmounted, nextTick, watch, inject } from 'vue';
+import { ref, computed, markRaw, provide, onMounted, onUnmounted, nextTick, watch, inject } from 'vue';
 import { useNode, useVueFlow } from '@vue-flow/core';
 import BaseNode from './BaseNode.vue';
 import MessageContent from './MessageContent.vue';
 import { MessageItemContainer, PositionedConnector } from './shared';
 import { MessageIcon, TextMessageIcon, AttachmentIcon, ButtonMessageIcon, LinkMessageIcon, LocationMessageIcon, ListMessageIcon } from './icons';
+import { useConnectorPositionTracking } from './composables/useConnectorPositionTracking';
 
 // Vue Flow passes these props to custom nodes
 const props = defineProps({
@@ -138,71 +139,14 @@ const messagesContainerRef = ref(null);
 // Output buttons registry - shared with MessageContent via provide/inject
 const outputButtons = ref([]);
 
-// Button element registry - stores refs to actual button DOM elements
-const buttonElements = reactive(new Map());
+// Use composable for connector position tracking
+const { registerElement, unregisterElement, getPosition, recalculate } = useConnectorPositionTracking(messagesContainerRef);
 
-// Connector positions calculated from actual DOM measurements
-const connectorPositions = ref({});
-
-// ResizeObserver for detecting layout changes
-let resizeObserver = null;
-
-// Register/unregister button elements
-const buttonElementRegistry = {
-    register(buttonId, element) {
-        buttonElements.set(buttonId, element);
-        scheduleRecalculate();
-    },
-    unregister(buttonId) {
-        buttonElements.delete(buttonId);
-        scheduleRecalculate();
-    },
-};
-
-provide('buttonElementRegistry', buttonElementRegistry);
-
-// Debounced recalculation
-let recalculateTimer = null;
-const scheduleRecalculate = () => {
-    if (recalculateTimer) clearTimeout(recalculateTimer);
-    recalculateTimer = setTimeout(() => {
-        recalculatePositions();
-    }, 10);
-};
-
-// Calculate connector positions from actual DOM measurements
-const recalculatePositions = () => {
-    if (!messagesContainerRef.value) return;
-
-    // Find the node-card-wrapper which is the positioning context for connectors
-    const cardWrapper = messagesContainerRef.value.closest('.node-card-wrapper');
-    if (!cardWrapper) return;
-
-    const newPositions = {};
-
-    buttonElements.forEach((element, buttonId) => {
-        if (element) {
-            // Calculate offset using DOM offset properties (not affected by transforms)
-            let top = element.offsetTop + (element.offsetHeight / 2);
-            let el = element.offsetParent;
-
-            // Walk up the offset parent chain until we reach the card wrapper
-            while (el && el !== cardWrapper && !el.classList?.contains('node-card-wrapper')) {
-                top += el.offsetTop;
-                el = el.offsetParent;
-            }
-
-            newPositions[buttonId] = top;
-        }
-    });
-
-    connectorPositions.value = newPositions;
-};
-
-// Get connector position for a button (from actual measurements)
-const getButtonConnectorTop = (buttonId) => {
-    return connectorPositions.value[buttonId] ?? 50;
-};
+// Provide button element registry to child components (MessageContent uses this)
+provide('buttonElementRegistry', {
+    register: registerElement,
+    unregister: unregisterElement,
+});
 
 // Update output buttons for a message (called by MessageContent)
 const updateOutputButtons = (messageId, buttons) => {
@@ -213,44 +157,12 @@ const updateOutputButtons = (messageId, buttons) => {
     ];
     // Wait for DOM to update before recalculating positions
     nextTick(() => {
-        scheduleRecalculate();
+        recalculate();
     });
 };
 
 provide('outputButtonsRegistry', {
     updateButtons: updateOutputButtons,
-});
-
-// Track unmounted state to prevent observer callbacks after cleanup
-let isUnmounted = false;
-
-// Setup ResizeObserver when container is available
-watch(messagesContainerRef, (container) => {
-    if (resizeObserver) {
-        resizeObserver.disconnect();
-        resizeObserver = null;
-    }
-    if (container && !isUnmounted) {
-        resizeObserver = new ResizeObserver(() => {
-            if (!isUnmounted) {
-                scheduleRecalculate();
-            }
-        });
-        resizeObserver.observe(container);
-        // Initial calculation
-        scheduleRecalculate();
-    }
-}, { immediate: true });
-
-onUnmounted(() => {
-    isUnmounted = true;
-    if (resizeObserver) {
-        resizeObserver.disconnect();
-        resizeObserver = null;
-    }
-    if (recalculateTimer) {
-        clearTimeout(recalculateTimer);
-    }
 });
 
 // Message types available in WhatsApp Cloud API
@@ -357,7 +269,7 @@ const handleDrop = (dropIndex) => {
 
     // Recalculate connector positions after reorder
     nextTick(() => {
-        scheduleRecalculate();
+        recalculate();
     });
 };
 
