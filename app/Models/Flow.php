@@ -12,6 +12,16 @@ class Flow extends Model
     protected $fillable = ['name', 'nodes', 'edges'];
 
     /**
+     * Default attribute values (MySQL doesn't support JSON column defaults).
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'nodes' => '[]',
+        'edges' => '[]',
+    ];
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array

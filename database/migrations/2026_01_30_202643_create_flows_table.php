@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('flows', function (Blueprint $table) {
             $table->id();
             $table->string('name')->default('Nuevo flujo');
-            $table->json('nodes')->default('[]');
-            $table->json('edges')->default('[]');
+            $table->json('nodes')->nullable(); // MySQL doesn't support JSON defaults
+            $table->json('edges')->nullable();
             $table->timestamps();
         });
     }
