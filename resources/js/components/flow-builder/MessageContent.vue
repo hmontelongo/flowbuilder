@@ -235,23 +235,32 @@ const emit = defineEmits(['update:message']);
 // Inject the output buttons registry from MessageNode
 const outputButtonsRegistry = inject('outputButtonsRegistry', null);
 
-// Content state
-const content = ref(props.message.content || '');
+// Helper to safely access nested content properties
+const getContent = (key, defaultValue = '') => {
+    const c = props.message.content;
+    if (c && typeof c === 'object') {
+        return c[key] ?? defaultValue;
+    }
+    return defaultValue;
+};
+
+// Content state - initialize from persisted data
+const content = ref(getContent('text', props.message.content || ''));
 const textareaRef = ref(null);
 
-// CTA URL message state
+// CTA URL message state - initialize from persisted data
 const headerOptions = [
     { id: 'text', icon: markRaw(HeaderTextIcon), label: 'Texto' },
     { id: 'attachment', icon: markRaw(AttachmentIcon), label: 'Archivo adjunto' },
 ];
-const ctaHeaderType = ref(null); // 'text', 'attachment', or null
-const ctaHeaderText = ref('');
+const ctaHeaderType = ref(getContent('headerType', null));
+const ctaHeaderText = ref(getContent('headerText', ''));
 const ctaFileName = ref('');
-const ctaBody = ref('');
-const ctaFooterEnabled = ref(false);
-const ctaFooter = ref('');
-const ctaButtonText = ref('');
-const ctaUrl = ref('');
+const ctaBody = ref(getContent('body', ''));
+const ctaFooterEnabled = ref(getContent('footerEnabled', false));
+const ctaFooter = ref(getContent('footer', ''));
+const ctaButtonText = ref(getContent('buttonText', ''));
+const ctaUrl = ref(getContent('url', ''));
 
 const selectCtaFile = () => {
     console.log('CTA file selection not implemented');
@@ -267,21 +276,24 @@ const updateCharCount = () => {
     }
 };
 
-// Attachment state
-const fileName = ref('');
+// Attachment state - initialize from persisted data
+const fileName = ref(getContent('fileName', ''));
 const selectFile = () => {
     console.log('File selection not implemented');
 };
 
-// Button message state (Interactive Reply Buttons)
-const buttonHeaderType = ref(null); // 'text', 'attachment', or null
-const buttonHeaderText = ref('');
-const buttonBody = ref('');
-const buttonFooterEnabled = ref(false);
-const buttonFooter = ref('');
-const buttons = ref([
-    { id: crypto.randomUUID(), title: '' },
-]);
+// Button message state (Interactive Reply Buttons) - initialize from persisted data
+const buttonHeaderType = ref(getContent('headerType', null));
+const buttonHeaderText = ref(getContent('headerText', ''));
+const buttonBody = ref(getContent('body', ''));
+const buttonFooterEnabled = ref(getContent('footerEnabled', false));
+const buttonFooter = ref(getContent('footer', ''));
+const savedButtons = getContent('buttons', null);
+const buttons = ref(
+    Array.isArray(savedButtons) && savedButtons.length > 0
+        ? savedButtons.map(b => ({ id: b.id || crypto.randomUUID(), title: b.title || '' }))
+        : [{ id: crypto.randomUUID(), title: '' }]
+);
 
 const addButton = () => {
     if (buttons.value.length < 3) {
@@ -304,8 +316,8 @@ const selectButtonFile = () => {
     console.log('Button header file selection not implemented');
 };
 
-// CTA button ID for link message type
-const ctaButtonId = ref(crypto.randomUUID());
+// CTA button ID for link message type - preserve ID for connector stability
+const ctaButtonId = ref(getContent('buttonId', null) || crypto.randomUUID());
 
 // Register output buttons with parent MessageNode
 const updateOutputRegistry = () => {
@@ -332,14 +344,17 @@ onUnmounted(() => {
     }
 });
 
-// Location state
-const latitude = ref('');
-const longitude = ref('');
-const locationName = ref('');
+// Location state - initialize from persisted data
+const latitude = ref(getContent('latitude', ''));
+const longitude = ref(getContent('longitude', ''));
+const locationName = ref(getContent('name', ''));
 
-// List message state
-const listButtonText = ref('');
-const listItems = ref(['']);
+// List message state - initialize from persisted data
+const listButtonText = ref(getContent('buttonText', ''));
+const savedItems = getContent('items', null);
+const listItems = ref(
+    Array.isArray(savedItems) && savedItems.length > 0 ? [...savedItems] : ['']
+);
 const addListItem = () => {
     if (listItems.value.length < 10) {
         listItems.value.push('');
