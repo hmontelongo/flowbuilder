@@ -9,4 +9,11 @@
     >
         Clear Canvas
     </button>
+    <button
+        type="button"
+        @click="$dispatch('toggle-error-state')"
+        class="px-2 py-1 rounded bg-red-900/50 hover:bg-red-800/50 hover:text-red-300 text-red-400 transition-colors"
+    >
+        Toggle Error
+    </button>
 </div>

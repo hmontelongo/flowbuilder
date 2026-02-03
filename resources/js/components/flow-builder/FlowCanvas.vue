@@ -83,6 +83,9 @@ const {
 // Track original connections to prevent duplicates after splitting
 const originalConnections = ref(new Set());
 
+// Debug: track error state toggle for visualizing all nodes in error mode
+const debugErrorState = ref(false);
+
 // Track highlighted edge for snap-to-edge visual feedback
 const highlightedEdgeId = ref(null);
 
@@ -417,6 +420,23 @@ const handleCanvasCleared = () => {
     edges.value = [];
 };
 
+// Debug: Toggle error state on all nodes
+const handleToggleErrorState = () => {
+    debugErrorState.value = !debugErrorState.value;
+    const newState = debugErrorState.value
+        ? { mode: 'error', errorLevel: 'error' }
+        : { mode: 'normal' };
+
+    nodes.value.forEach(node => {
+        updateNode(node.id, {
+            data: {
+                ...node.data,
+                state: newState,
+            },
+        });
+    });
+};
+
 onMounted(() => {
     window.addEventListener('fit-view', handleFitView);
     window.addEventListener('keydown', handleKeyDown);
@@ -431,6 +451,9 @@ onMounted(() => {
     // Listen for canvas-cleared event from Livewire
     window.addEventListener('canvas-cleared', handleCanvasCleared);
 
+    // Listen for toggle-error-state event from toolbar
+    window.addEventListener('toggle-error-state', handleToggleErrorState);
+
     // Emit initial zoom level after mount
     setTimeout(() => {
         window.dispatchEvent(new CustomEvent('zoom-changed', {
@@ -444,6 +467,7 @@ onUnmounted(() => {
     window.removeEventListener('keydown', handleKeyDown);
     window.removeEventListener('keyup', handleKeyUp);
     window.removeEventListener('canvas-cleared', handleCanvasCleared);
+    window.removeEventListener('toggle-error-state', handleToggleErrorState);
 
     const flowCanvas = document.getElementById('flow-canvas');
     if (flowCanvas) {
@@ -528,6 +552,12 @@ const edges = ref(transformEdges(props.initialEdges));
 // Watch for node data changes from child components (via updateNodeData)
 // This ensures changes made by child nodes are synced to Livewire
 watch(nodes, () => {
+    syncToLivewire();
+}, { deep: true });
+
+// Watch for edge changes (connections created/deleted)
+// This ensures new edges are persisted
+watch(edges, () => {
     syncToLivewire();
 }, { deep: true });
 
